@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
-const axios = require('axios'); // 👈 axios ተጨምሯል
+const axios = require('axios');
 require('dotenv').config();
 
 const db = require('./db');
@@ -176,7 +176,7 @@ app.post('/api/user/add-balance', async (req, res) => {
 });
 
 // ==========================================
-// 💳 6. CHAPA PAYMENT INTEGRATION (NEW)
+// 💳 6. CHAPA PAYMENT INTEGRATION
 // ==========================================
 
 // A. Initialize Chapa Payment
@@ -202,10 +202,10 @@ app.post('/api/pay', async (req, res) => {
         first_name: firstName || 'User',
         tx_ref: tx_ref,
         callback_url: 'https://p2p-coinflip-game.onrender.com/api/chapa-webhook',
-        return_url: 'https://p2p-coinflip-game.onrender.com', // ክፍያ ሲጠናቀቅ ተመልሶ የሚመጣበት
+        return_url: 'https://p2p-coinflip-game.onrender.com',
         customization: {
-          title: 'P2P Wallet Deposit',
-          description: 'Top-up funds for P2P Coin Flip Game',
+          title: 'P2P Coinflip', // 👈 12 characters (Max 16)
+          description: 'Deposit',
         },
       },
       {
@@ -227,7 +227,7 @@ app.post('/api/pay', async (req, res) => {
   }
 });
 
-// B. Chapa Webhook (ክፍያው ሲረጋገጥ ባላንስ በራስ-ሰር ይጨምራል)
+// B. Chapa Webhook
 app.post('/api/chapa-webhook', async (req, res) => {
   try {
     const { status, tx_ref } = req.body;
@@ -238,7 +238,6 @@ app.post('/api/chapa-webhook', async (req, res) => {
       const depositAmount = Number(parts[4]);
 
       if (tid && depositAmount > 0) {
-        // የዳታቤዝ ባላንስ አፕዴት ማድረግ
         await db.update(users)
           .set({ balance: sql`${users.balance} + ${depositAmount}` })
           .where(eq(users.telegramId, tid));
