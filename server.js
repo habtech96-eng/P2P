@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const axios = require('axios'); // 👈 axios ተጨምሯል
 require('dotenv').config();
 
 const db = require('./db');
@@ -32,7 +33,7 @@ app.post('/api/user/sync', async (req, res) => {
         telegramId: tid,
         username: username || '',
         firstName: firstName || 'User',
-        balance: 1000
+        balance: 10
       }).returning();
       return res.json({ success: true, user: newUser[0] });
     }
@@ -174,7 +175,83 @@ app.post('/api/user/add-balance', async (req, res) => {
   }
 });
 
+// ==========================================
+// 💳 6. CHAPA PAYMENT INTEGRATION (NEW)
+// ==========================================
 
+// A. Initialize Chapa Payment
+app.post('/api/pay', async (req, res) => {
+  try {
+    const { userId, amount, email, firstName } = req.body;
+    const depositAmount = Number(amount);
+    const tid = String(userId);
+
+    if (!depositAmount || depositAmount <= 0) {
+      return res.status(400).json({ success: false, message: 'ትክክለኛ የብር መጠን ያስገቡ!' });
+    }
+
+    // Unique reference number: tx-p2p-[timestamp]-[userId]-[amount]
+    const tx_ref = `tx-p2p-${Date.now()}-${tid}-${depositAmount}`;
+
+    const response = await axios.post(
+      'https://api.chapa.co/v1/transaction/initialize',
+      {
+        amount: depositAmount,
+        currency: 'ETB',
+        email: email || 'user@p2papp.com',
+        first_name: firstName || 'User',
+        tx_ref: tx_ref,
+        callback_url: 'https://p2p-coinflip-game.onrender.com/api/chapa-webhook',
+        return_url: 'https://p2p-coinflip-game.onrender.com', // ክፍያ ሲጠናቀቅ ተመልሶ የሚመጣበት
+        customization: {
+          title: 'P2P Wallet Deposit',
+          description: 'Top-up funds for P2P Coin Flip Game',
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.CHAPA_SECRET_KEY}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (response.data.status === 'success') {
+      res.json({ success: true, checkout_url: response.data.data.checkout_url });
+    } else {
+      res.status(400).json({ success: false, message: 'Payment initialization failed' });
+    }
+  } catch (error) {
+    console.error('Chapa Initialization Error:', error.response?.data || error.message);
+    res.status(500).json({ success: false, message: 'Server Error during Chapa Payment' });
+  }
+});
+
+// B. Chapa Webhook (ክፍያው ሲረጋገጥ ባላንስ በራስ-ሰር ይጨምራል)
+app.post('/api/chapa-webhook', async (req, res) => {
+  try {
+    const { status, tx_ref } = req.body;
+
+    if (status === 'success' && tx_ref && tx_ref.startsWith('tx-p2p-')) {
+      const parts = tx_ref.split('-');
+      const tid = String(parts[3]);
+      const depositAmount = Number(parts[4]);
+
+      if (tid && depositAmount > 0) {
+        // የዳታቤዝ ባላንስ አፕዴት ማድረግ
+        await db.update(users)
+          .set({ balance: sql`${users.balance} + ${depositAmount}` })
+          .where(eq(users.telegramId, tid));
+
+        console.log(`✅ Chapa Deposit Successful! User ${tid} credited with ${depositAmount} ETB.`);
+      }
+    }
+    res.sendStatus(200);
+  } catch (err) {
+    console.error('Webhook Error:', err.message);
+    res.sendStatus(500);
+  }
+});
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT}`);
