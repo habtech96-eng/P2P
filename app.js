@@ -26,9 +26,13 @@ async function initApp() {
     const firstName = tgUser?.first_name || 'Guest';
 
     // Update UI
-    document.getElementById('username').textContent = username;
-    document.getElementById('avatar-letter').textContent = username.charAt(0).toUpperCase();
-    document.getElementById('tg-status').textContent = tgUser ? 'Connected via Telegram' : 'Local Sandbox Mode';
+    const usernameEl = document.getElementById('username');
+    const avatarEl = document.getElementById('avatar-letter');
+    const statusEl = document.getElementById('tg-status');
+
+    if (usernameEl) usernameEl.textContent = username;
+    if (avatarEl) avatarEl.textContent = username.charAt(0).toUpperCase();
+    if (statusEl) statusEl.textContent = tgUser ? 'Connected via Telegram' : 'Local Sandbox Mode';
 
     await syncUser(currentUserId, username, firstName);
     await loadLobby();
@@ -59,7 +63,18 @@ function setupEventListeners() {
   });
 
   // Create Challenge Button
-  document.getElementById('create-game-btn').addEventListener('click', handleCreateChallenge);
+  const createBtn = document.getElementById('create-game-btn');
+  if (createBtn) createBtn.addEventListener('click', handleCreateChallenge);
+
+  // Deposit Modal Triggers
+  const openDepositBtn = document.getElementById('open-deposit-btn');
+  if (openDepositBtn) openDepositBtn.addEventListener('click', openDepositModal);
+
+  const closeDepositBtn = document.getElementById('close-deposit-btn');
+  if (closeDepositBtn) closeDepositBtn.addEventListener('click', closeDepositModal);
+
+  const payBtn = document.getElementById('pay-btn');
+  if (payBtn) payBtn.addEventListener('click', executeChapaPay);
 }
 
 // USER SYNC
@@ -86,9 +101,9 @@ function updateBalance(balance) {
 
 // CREATE CHALLENGE
 async function handleCreateChallenge() {
+  const btn = document.getElementById('create-game-btn');
   try {
-    const btn = document.getElementById('create-game-btn');
-    btn.disabled = true;
+    if (btn) btn.disabled = true;
 
     const res = await fetch('/api/coinflip/create', {
       method: 'POST',
@@ -100,7 +115,7 @@ async function handleCreateChallenge() {
       })
     });
     const data = await res.json();
-    btn.disabled = false;
+    if (btn) btn.disabled = false;
 
     if (data.success) {
       updateBalance(data.newBalance);
@@ -110,7 +125,7 @@ async function handleCreateChallenge() {
       showMessage(data.message || 'Failed to create challenge');
     }
   } catch (err) {
-    document.getElementById('create-game-btn').disabled = false;
+    if (btn) btn.disabled = false;
     showMessage('Error creating challenge');
   }
 }
@@ -184,17 +199,19 @@ function animateCoinFlip(winningChoice, onComplete) {
   const statusText = document.getElementById('modal-status');
   const resultText = document.getElementById('modal-result-text');
 
+  if (!modal || !coin) return;
+
   modal.style.display = 'flex';
   coin.className = 'coin';
-  statusText.innerText = 'Flipping Coin...';
-  resultText.innerText = 'Good Luck!';
+  if (statusText) statusText.innerText = 'Flipping Coin...';
+  if (resultText) resultText.innerText = 'Good Luck!';
 
   setTimeout(() => {
     coin.classList.add(winningChoice === 'HEADS' ? 'spin-heads' : 'spin-tails');
   }, 100);
 
   setTimeout(() => {
-    statusText.innerText = `Result: ${winningChoice}!`;
+    if (statusText) statusText.innerText = `Result: ${winningChoice}!`;
     if (onComplete) onComplete();
     setTimeout(() => {
       modal.style.display = 'none';
