@@ -207,26 +207,71 @@ function showMessage(msg) {
   if (tg?.showAlert) tg.showAlert(String(msg));
   else alert(String(msg));
 }
-// REFILL BALANCE FUNCTION
-async function handleRefillBalance() {
+
+// ==========================================
+// 💳 CHAPA PAYMENT (DEPOSIT MODAL LOGIC)
+// ==========================================
+
+function openDepositModal() {
+  const modal = document.getElementById('deposit-modal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeDepositModal() {
+  const modal = document.getElementById('deposit-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+async function executeChapaPay() {
+  const amountInput = document.getElementById('deposit-amount')?.value;
+  const payBtn = document.getElementById('pay-btn');
+
+  if (!amountInput || Number(amountInput) <= 0) {
+    showMessage('እባክዎን ትክክለኛ የብር መጠን ያስገቡ!');
+    return;
+  }
+
   try {
-    const res = await fetch('/api/user/add-balance', {
+    if (payBtn) {
+      payBtn.innerText = "እየላከ ነው...";
+      payBtn.disabled = true;
+    }
+
+    const tgUser = tg?.initDataUnsafe?.user;
+    
+    const res = await fetch('/api/pay', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         userId: currentUserId,
-        amount: 1000 // በምታካክለው መጠን መቀየር ትችላለህ
+        amount: Number(amountInput),
+        firstName: tgUser?.first_name || 'User',
+        email: `${currentUserId}@p2papp.com`
       })
     });
-    const data = await res.json();
 
-    if (data.success) {
-      updateBalance(data.newBalance);
-      showMessage('🎉 +1,000 ETB በባላንስህ ላይ ተጨምሯል!');
+    const data = await res.json();
+    
+    if (payBtn) {
+      payBtn.innerText = "በ Chapa ክፈል";
+      payBtn.disabled = false;
+    }
+
+    if (data.success && data.checkout_url) {
+      closeDepositModal();
+      if (tg?.openLink) {
+        tg.openLink(data.checkout_url);
+      } else {
+        window.location.href = data.checkout_url;
+      }
     } else {
-      showMessage(data.message || 'ባላንስ ማደስ አልተቻለም');
+      showMessage(data.message || 'ክፍያ ማስጀመር አልተቻለም!');
     }
   } catch (err) {
-    showMessage('Error refilling balance');
+    if (payBtn) {
+      payBtn.innerText = "በ Chapa ክፈል";
+      payBtn.disabled = false;
+    }
+    showMessage('የሰርቨር ኤረር አጋጥሟል!');
   }
 }

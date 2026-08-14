@@ -52,10 +52,9 @@
         <span>Secure P2P Wallet</span>
         <span>● Active</span>
       </div>
-      <button onclick="handleRefillBalance()" class="refill-btn" style="margin-top: 10px; background: #22c55e; color: #fff; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: bold;">
-  ➕ 1,000 ETB ጨምር
-</button>
-
+      <button onclick="openDepositModal()" class="refill-btn" style="margin-top: 10px; background: #22c55e; color: #fff; border: none; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        💳 ብር በ Chapa ጨምር (Deposit)
+      </button>
     </section>
 
     <!-- CREATE GAME SECTION -->
@@ -139,6 +138,24 @@
         </div>
       </div>
     </section>
+
+    <!-- DEPOSIT MODAL (NEW) -->
+    <div id="deposit-modal" class="modal-overlay" style="display: none;">
+      <div class="modal-content" style="background: #1e293b; color: white; padding: 20px; border-radius: 12px; max-width: 320px; margin: auto; text-align: center;">
+        <h3>💳 ሂሳብ ይሙሉ (Deposit)</h3>
+        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 15px;">በ Telebirr, CBE Birr ወይም Card የሚጨምሩትን የብር መጠን ይምረጡ</p>
+        
+        <input type="number" id="deposit-amount" value="100" placeholder="መጠን (ETB)" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 15px; box-sizing: border-box;" />
+
+        <button id="pay-btn" onclick="executeChapaPay()" style="width: 100%; background: #22c55e; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">
+          በ Chapa ክፈል
+        </button>
+        
+        <button onclick="closeDepositModal()" style="width: 100%; background: transparent; color: #94a3b8; border: none; padding: 10px; margin-top: 8px; cursor: pointer;">
+          ሰርዝ (Close)
+        </button>
+      </div>
+    </div>
 
     <!-- ANIMATION MODAL -->
     <div id="coin-modal" class="modal-overlay" style="display: none;">
