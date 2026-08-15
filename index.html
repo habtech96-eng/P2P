@@ -65,6 +65,9 @@
       <button id="tab-wheel" class="tab-btn" onclick="switchGame('wheel')" style="flex: 1; padding: 10px; background: #1e293b; color: #94a3b8; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
         🎡 Wheel
       </button>
+      <button id="tab-penalty" class="tab-btn" onclick="switchGame('penalty')" style="flex: 1; padding: 10px; background: #1e293b; color: #94a3b8; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+        ⚽ Penalty
+      </button>
     </div>
 
     <!-- COIN FLIP SECTION -->
@@ -100,8 +103,6 @@
                 <small>Eagle Side</small>
               </span>
             </button>
-            <button id="tab-penalty" class="tab-btn" onclick="switchGame('penalty')">⚽ Penalty</button>
-
           </div>
         </div>
 
@@ -154,7 +155,7 @@
       </section>
     </div>
 
-    <!-- WHEEL OF FORTUNE SECTION (NEW) -->
+    <!-- WHEEL OF FORTUNE SECTION -->
     <div id="wheel-game-section" style="display: none;">
       <section class="bet-card" style="text-align: center;">
         <div class="section-title" style="justify-content: center; margin-bottom: 10px;">
@@ -197,23 +198,51 @@
           <span>Spin the Wheel 🎡</span>
         </button>
       </section>
-      <div id="penalty-game-section" style="display: none;">
-  <section class="bet-card" style="text-align: center;">
-    <h2>⚽ Penalty Shootout</h2>
-    <p>ግብ ማስቆጠሪያ አቅጣጫ ይምረጡ (1.9x Win)</p>
-
-    <!-- Goal Post Grid -->
-    <div class="goal-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0;">
-      <button class="shot-btn" onclick="shootPenalty('top_left')">↖️ Top Left</button>
-      <button class="shot-btn" onclick="shootPenalty('center')">⬆️ Center</button>
-      <button class="shot-btn" onclick="shootPenalty('top_right')">↗️ Top Right</button>
-      <button class="shot-btn" onclick="shootPenalty('bottom_left')">↙️ Bottom Left</button>
-      <div style="padding: 10px;">🧤 Keeper</div>
-      <button class="shot-btn" onclick="shootPenalty('bottom_right')">↘️ Bottom Right</button>
     </div>
-  </section>
-</div>
 
+    <!-- PENALTY SHOOTOUT SECTION -->
+    <div id="penalty-game-section" style="display: none;">
+      <section class="bet-card" style="text-align: center;">
+        <div class="section-title" style="justify-content: center; margin-bottom: 10px;">
+          <div class="title-icon" style="background: #10b981; color: white;">⚽</div>
+          <div>
+            <h2>Penalty Shootout</h2>
+            <p>ግብ ማስቆጠሪያ አቅጣጫ ይምረጡ (1.9x Win)</p>
+          </div>
+        </div>
+
+        <!-- PENALTY BET AMOUNT -->
+        <div class="form-group" style="margin-top: 15px;">
+          <div class="label-row">
+            <label>Penalty Bet Amount</label>
+            <span class="currency">ETB</span>
+          </div>
+          <div class="amount-grid">
+            <button type="button" class="penalty-amount-btn active" data-amount="10">
+              <strong>10</strong><span>ETB</span>
+            </button>
+            <button type="button" class="penalty-amount-btn" data-amount="50">
+              <strong>50</strong><span>ETB</span>
+            </button>
+            <button type="button" class="penalty-amount-btn" data-amount="100">
+              <strong>100</strong><span>ETB</span>
+            </button>
+            <button type="button" class="penalty-amount-btn" data-amount="500">
+              <strong>500</strong><span>ETB</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Goal Post Grid -->
+        <div class="goal-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0;">
+          <button class="shot-btn" onclick="shootPenalty('top_left')" style="padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; cursor: pointer; font-weight: bold;">↖️ Top Left</button>
+          <button class="shot-btn" onclick="shootPenalty('center')" style="padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; cursor: pointer; font-weight: bold;">⬆️ Center</button>
+          <button class="shot-btn" onclick="shootPenalty('top_right')" style="padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; cursor: pointer; font-weight: bold;">↗️ Top Right</button>
+          <button class="shot-btn" onclick="shootPenalty('bottom_left')" style="padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; cursor: pointer; font-weight: bold;">↙️ Bottom Left</button>
+          <div style="padding: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold;">🧤 Keeper</div>
+          <button class="shot-btn" onclick="shootPenalty('bottom_right')" style="padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; cursor: pointer; font-weight: bold;">↘️ Bottom Right</button>
+        </div>
+      </section>
     </div>
 
     <!-- DEPOSIT MODAL -->
@@ -250,7 +279,7 @@
 
     <!-- FOOTER -->
     <footer>
-      <span>P2P Games</span> • <span>Wheel & Coin Flip</span> • <span>Instant Payout</span>
+      <span>P2P Games</span> • <span>Wheel, Coin Flip & Penalty</span> • <span>Instant Payout</span>
     </footer>
   </div>
 
