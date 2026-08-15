@@ -23,14 +23,26 @@ const coinFlipGames = pgTable('coin_flip_games', {
   createdAt: timestamp('created_at').defaultNow()
 });
 
-// Wheel Spins Table (NEW)
+// Wheel Spins Table
 const wheelSpins = pgTable('wheel_spins', {
   id: serial('id').primaryKey(),
   userId: text('user_id').notNull(),
   amount: integer('amount').notNull(),
-  multiplier: doublePrecision('multiplier').notNull(), // e.g., 1.5, 2.0, 0
+  multiplier: doublePrecision('multiplier').notNull(),
   payout: integer('payout').notNull(),
   createdAt: timestamp('created_at').defaultNow()
 });
 
-module.exports = { users, coinFlipGames, wheelSpins };
+// Penalty Bets Table (NEW ⚽)
+const penaltyBets = pgTable('penalty_bets', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  amount: integer('amount').notNull(),
+  playerTarget: varchar('player_target', { length: 20 }).notNull(), // 'top_left', 'top_right', etc.
+  keeperDive: varchar('keeper_dive', { length: 20 }).notNull(),
+  isGoal: varchar('is_goal', { length: 10 }).notNull(), // 'YES' or 'NO'
+  payout: integer('payout').notNull(),
+  createdAt: timestamp('created_at').defaultNow()
+});
+
+module.exports = { users, coinFlipGames, wheelSpins, penaltyBets };

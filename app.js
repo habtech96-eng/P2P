@@ -2,8 +2,9 @@
 let selectedAmount = 10;
 let selectedChoice = 'HEADS';
 let selectedWheelAmount = 10;
+let selectedPenaltyAmount = 10;
 let currentUserId = null;
-let currentGame = 'coinflip'; // 'coinflip' or 'wheel'
+let currentGame = 'coinflip'; // 'coinflip', 'wheel', or 'penalty'
 
 // WHEEL CONFIGURATION
 let wheelAngle = 0;
@@ -67,20 +68,36 @@ function switchGame(game) {
   currentGame = game;
   const coinSection = document.getElementById('coinflip-game-section');
   const wheelSection = document.getElementById('wheel-game-section');
+  const penaltySection = document.getElementById('penalty-game-section');
+
   const coinTab = document.getElementById('tab-coinflip');
   const wheelTab = document.getElementById('tab-wheel');
+  const penaltyTab = document.getElementById('tab-penalty');
 
+  // Reset tab styles
+  [coinTab, wheelTab, penaltyTab].forEach(tab => {
+    if (tab) {
+      tab.style.background = '#1e293b';
+      tab.style.color = '#94a3b8';
+    }
+  });
+
+  // Hide all sections
+  if (coinSection) coinSection.style.display = 'none';
+  if (wheelSection) wheelSection.style.display = 'none';
+  if (penaltySection) penaltySection.style.display = 'none';
+
+  // Activate selected section & tab
   if (game === 'coinflip') {
     if (coinSection) coinSection.style.display = 'block';
-    if (wheelSection) wheelSection.style.display = 'none';
     if (coinTab) { coinTab.style.background = '#3b82f6'; coinTab.style.color = '#fff'; }
-    if (wheelTab) { wheelTab.style.background = '#1e293b'; wheelTab.style.color = '#94a3b8'; }
-  } else {
-    if (coinSection) coinSection.style.display = 'none';
+  } else if (game === 'wheel') {
     if (wheelSection) wheelSection.style.display = 'block';
     if (wheelTab) { wheelTab.style.background = '#f59e0b'; wheelTab.style.color = '#fff'; }
-    if (coinTab) { coinTab.style.background = '#1e293b'; coinTab.style.color = '#94a3b8'; }
     drawWheel(wheelAngle);
+  } else if (game === 'penalty') {
+    if (penaltySection) penaltySection.style.display = 'block';
+    if (penaltyTab) { penaltyTab.style.background = '#10b981'; penaltyTab.style.color = '#fff'; }
   }
 }
 
@@ -100,6 +117,15 @@ function setupEventListeners() {
       document.querySelectorAll('.wheel-amount-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       selectedWheelAmount = Number(btn.getAttribute('data-amount'));
+    });
+  });
+
+  // Penalty Amount Selection
+  document.querySelectorAll('.penalty-amount-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.penalty-amount-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedPenaltyAmount = Number(btn.getAttribute('data-amount'));
     });
   });
 
@@ -264,6 +290,46 @@ async function handleSpinWheel() {
     isSpinning = false;
     if (btn) btn.disabled = false;
     showMessage('Error processing spin.');
+  }
+}
+
+// ==========================================
+// ⚽ PENALTY SHOOTOUT LOGIC
+// ==========================================
+
+async function shootPenalty(target) {
+  const shotBtns = document.querySelectorAll('.shot-btn');
+  try {
+    shotBtns.forEach(btn => btn.disabled = true);
+
+    const res = await fetch('/api/penalty/shoot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: currentUserId,
+        amount: selectedPenaltyAmount,
+        target: target
+      })
+    });
+
+    const data = await res.json();
+    shotBtns.forEach(btn => btn.disabled = false);
+
+    if (!data.success) {
+      showMessage(data.message || 'Shot failed!');
+      return;
+    }
+
+    updateBalance(data.newBalance);
+
+    if (data.isGoal) {
+      showMessage(`⚽ GOAL! You won ${data.payout} ETB! (Keeper dived: ${data.keeperDive.replace('_', ' ').toUpperCase()})`);
+    } else {
+      showMessage(`🧤 SAVED! Keeper caught your shot! (Keeper dived: ${data.keeperDive.replace('_', ' ').toUpperCase()})`);
+    }
+  } catch (err) {
+    shotBtns.forEach(btn => btn.disabled = false);
+    showMessage('Error processing penalty shot.');
   }
 }
 

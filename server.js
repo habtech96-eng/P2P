@@ -5,7 +5,7 @@ const axios = require('axios');
 require('dotenv').config();
 
 const db = require('./db');
-const { users, coinFlipGames } = require('./schema');
+const { users, coinFlipGames, wheelSpins, penaltyBets } = require('./schema');
 const { eq, sql } = require('drizzle-orm');
 
 const app = express();
@@ -172,7 +172,7 @@ app.post('/api/wheel/spin', async (req, res) => {
       return res.status(400).json({ success: false, message: 'በቂ ሂሳብ የለዎትም!' });
     }
 
-    // 2. Multiplier Configuration (matches frontend app.js slices)
+    // 2. Multiplier Configuration
     const slices = [
       { multiplier: 0 },   // Index 0: 0x
       { multiplier: 1.2 }, // Index 1: 1.2x
@@ -196,6 +196,14 @@ app.post('/api/wheel/spin', async (req, res) => {
       .where(eq(users.telegramId, tid))
       .returning();
 
+    // 4. Record Wheel Spin History
+    await db.insert(wheelSpins).values({
+      userId: tid,
+      amount: betAmount,
+      multiplier: chosenSlice.multiplier,
+      payout: Math.floor(payout)
+    });
+
     res.json({
       success: true,
       sliceIndex,
@@ -209,7 +217,63 @@ app.post('/api/wheel/spin', async (req, res) => {
   }
 });
 
-// 6. Add / Refill Balance API
+// ==========================================
+// ⚽ 6. PENALTY SHOOTOUT ENDPOINT
+// ==========================================
+app.post('/api/penalty/shoot', async (req, res) => {
+  try {
+    const { userId, amount, target } = req.body;
+    const betAmount = Number(amount);
+    const tid = String(userId);
+
+    const validTargets = ['top_left', 'top_right', 'center', 'bottom_left', 'bottom_right'];
+    if (!tid || isNaN(betAmount) || betAmount <= 0 || !validTargets.includes(target)) {
+      return res.status(400).json({ success: false, message: 'Invalid shot request' });
+    }
+
+    // Check Balance
+    const userResult = await db.select().from(users).where(eq(users.telegramId, tid)).limit(1);
+    if (!userResult.length || Number(userResult[0].balance) < betAmount) {
+      return res.status(400).json({ success: false, message: 'በቂ ሂሳብ የለዎትም!' });
+    }
+
+    // Keeper Dive Logic
+    const keeperDive = validTargets[Math.floor(Math.random() * validTargets.length)];
+    const isGoal = target !== keeperDive;
+    const multiplier = isGoal ? 1.9 : 0;
+    const payout = betAmount * multiplier;
+    const netChange = payout - betAmount;
+
+    // Update Balance
+    const updatedUser = await db.update(users)
+      .set({ balance: sql`${users.balance} + ${netChange}` })
+      .where(eq(users.telegramId, tid))
+      .returning();
+
+    // Record Penalty History
+    await db.insert(penaltyBets).values({
+      userId: tid,
+      amount: betAmount,
+      playerTarget: target,
+      keeperDive: keeperDive,
+      isGoal: isGoal ? 'YES' : 'NO',
+      payout: Math.floor(payout)
+    });
+
+    res.json({
+      success: true,
+      isGoal,
+      keeperDive,
+      payout,
+      newBalance: updatedUser[0].balance
+    });
+  } catch (err) {
+    console.error('Penalty Error:', err.message);
+    res.status(500).json({ success: false, message: 'Penalty game server error' });
+  }
+});
+
+// 7. Add / Refill Balance API
 app.post('/api/user/add-balance', async (req, res) => {
   try {
     const { userId, amount } = req.body;
@@ -232,7 +296,7 @@ app.post('/api/user/add-balance', async (req, res) => {
 });
 
 // ==========================================
-// 💳 7. CHAPA PAYMENT INTEGRATION
+// 💳 8. CHAPA PAYMENT INTEGRATION
 // ==========================================
 
 // A. Initialize Chapa Payment
@@ -246,7 +310,6 @@ app.post('/api/pay', async (req, res) => {
       return res.status(400).json({ success: false, message: 'ትክክለኛ የብር መጠን ያስገቡ!' });
     }
 
-    // Unique reference number: tx-p2p-[timestamp]-[userId]-[amount]
     const tx_ref = `tx-p2p-${Date.now()}-${tid}-${depositAmount}`;
 
     const response = await axios.post(
@@ -260,7 +323,7 @@ app.post('/api/pay', async (req, res) => {
         callback_url: 'https://p2p-coinflip-game.onrender.com/api/chapa-webhook',
         return_url: 'https://p2p-coinflip-game.onrender.com',
         customization: {
-          title: 'P2P Coinflip', // 12 characters (Max 16)
+          title: 'P2P Coinflip',
           description: 'Deposit',
         },
       },

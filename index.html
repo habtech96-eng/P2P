@@ -100,6 +100,8 @@
                 <small>Eagle Side</small>
               </span>
             </button>
+            <button id="tab-penalty" class="tab-btn" onclick="switchGame('penalty')">⚽ Penalty</button>
+
           </div>
         </div>
 
@@ -195,6 +197,23 @@
           <span>Spin the Wheel 🎡</span>
         </button>
       </section>
+      <div id="penalty-game-section" style="display: none;">
+  <section class="bet-card" style="text-align: center;">
+    <h2>⚽ Penalty Shootout</h2>
+    <p>ግብ ማስቆጠሪያ አቅጣጫ ይምረጡ (1.9x Win)</p>
+
+    <!-- Goal Post Grid -->
+    <div class="goal-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0;">
+      <button class="shot-btn" onclick="shootPenalty('top_left')">↖️ Top Left</button>
+      <button class="shot-btn" onclick="shootPenalty('center')">⬆️ Center</button>
+      <button class="shot-btn" onclick="shootPenalty('top_right')">↗️ Top Right</button>
+      <button class="shot-btn" onclick="shootPenalty('bottom_left')">↙️ Bottom Left</button>
+      <div style="padding: 10px;">🧤 Keeper</div>
+      <button class="shot-btn" onclick="shootPenalty('bottom_right')">↘️ Bottom Right</button>
+    </div>
+  </section>
+</div>
+
     </div>
 
     <!-- DEPOSIT MODAL -->
