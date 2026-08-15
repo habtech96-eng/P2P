@@ -153,7 +153,63 @@ app.post('/api/coinflip/accept', async (req, res) => {
   }
 });
 
-// 5. Add / Refill Balance API
+// ==========================================
+// 🎡 5. WHEEL OF FORTUNE SPIN ENDPOINT
+// ==========================================
+app.post('/api/wheel/spin', async (req, res) => {
+  try {
+    const { userId, amount } = req.body;
+    const betAmount = Number(amount);
+    const tid = String(userId);
+
+    if (!tid || isNaN(betAmount) || betAmount <= 0) {
+      return res.status(400).json({ success: false, message: 'እባክዎን ትክክለኛ የብር መጠን ይምረጡ!' });
+    }
+
+    // 1. Check User Balance
+    const userResult = await db.select().from(users).where(eq(users.telegramId, tid)).limit(1);
+    if (!userResult.length || Number(userResult[0].balance) < betAmount) {
+      return res.status(400).json({ success: false, message: 'በቂ ሂሳብ የለዎትም!' });
+    }
+
+    // 2. Multiplier Configuration (matches frontend app.js slices)
+    const slices = [
+      { multiplier: 0 },   // Index 0: 0x
+      { multiplier: 1.2 }, // Index 1: 1.2x
+      { multiplier: 1.5 }, // Index 2: 1.5x
+      { multiplier: 2.0 }, // Index 3: 2x
+      { multiplier: 0 },   // Index 4: 0x
+      { multiplier: 3.0 }, // Index 5: 3x
+      { multiplier: 0.5 }, // Index 6: 0.5x
+      { multiplier: 5.0 }  // Index 7: 5x
+    ];
+
+    // Pick Random Slice
+    const sliceIndex = Math.floor(Math.random() * slices.length);
+    const chosenSlice = slices[sliceIndex];
+    const payout = betAmount * chosenSlice.multiplier;
+    const netChange = payout - betAmount;
+
+    // 3. Update Balance
+    const updatedUser = await db.update(users)
+      .set({ balance: sql`${users.balance} + ${netChange}` })
+      .where(eq(users.telegramId, tid))
+      .returning();
+
+    res.json({
+      success: true,
+      sliceIndex,
+      multiplier: chosenSlice.multiplier,
+      payout,
+      newBalance: updatedUser[0].balance
+    });
+  } catch (err) {
+    console.error('Wheel Spin Error:', err.message);
+    res.status(500).json({ success: false, message: 'Server Error during Wheel Spin' });
+  }
+});
+
+// 6. Add / Refill Balance API
 app.post('/api/user/add-balance', async (req, res) => {
   try {
     const { userId, amount } = req.body;
@@ -176,7 +232,7 @@ app.post('/api/user/add-balance', async (req, res) => {
 });
 
 // ==========================================
-// 💳 6. CHAPA PAYMENT INTEGRATION
+// 💳 7. CHAPA PAYMENT INTEGRATION
 // ==========================================
 
 // A. Initialize Chapa Payment
@@ -204,7 +260,7 @@ app.post('/api/pay', async (req, res) => {
         callback_url: 'https://p2p-coinflip-game.onrender.com/api/chapa-webhook',
         return_url: 'https://p2p-coinflip-game.onrender.com',
         customization: {
-          title: 'P2P Coinflip', // 👈 12 characters (Max 16)
+          title: 'P2P Coinflip', // 12 characters (Max 16)
           description: 'Deposit',
         },
       },

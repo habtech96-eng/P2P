@@ -1,4 +1,4 @@
-const { pgTable, serial, text, integer, varchar, timestamp } = require('drizzle-orm/pg-core');
+const { pgTable, serial, text, integer, varchar, timestamp, doublePrecision } = require('drizzle-orm/pg-core');
 
 // Users Table
 const users = pgTable('users', {
@@ -23,4 +23,14 @@ const coinFlipGames = pgTable('coin_flip_games', {
   createdAt: timestamp('created_at').defaultNow()
 });
 
-module.exports = { users, coinFlipGames };
+// Wheel Spins Table (NEW)
+const wheelSpins = pgTable('wheel_spins', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  amount: integer('amount').notNull(),
+  multiplier: doublePrecision('multiplier').notNull(), // e.g., 1.5, 2.0, 0
+  payout: integer('payout').notNull(),
+  createdAt: timestamp('created_at').defaultNow()
+});
+
+module.exports = { users, coinFlipGames, wheelSpins };

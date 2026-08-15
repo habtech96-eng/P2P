@@ -1,13 +1,30 @@
 // STATE VARIABLES
 let selectedAmount = 10;
 let selectedChoice = 'HEADS';
+let selectedWheelAmount = 10;
 let currentUserId = null;
+let currentGame = 'coinflip'; // 'coinflip' or 'wheel'
+
+// WHEEL CONFIGURATION
+let wheelAngle = 0;
+let isSpinning = false;
+const wheelSlices = [
+  { label: '0x', value: 0, color: '#ef4444' },
+  { label: '1.2x', value: 1.2, color: '#3b82f6' },
+  { label: '1.5x', value: 1.5, color: '#10b981' },
+  { label: '2x', value: 2.0, color: '#f59e0b' },
+  { label: '0x', value: 0, color: '#ef4444' },
+  { label: '3x', value: 3.0, color: '#8b5cf6' },
+  { label: '0.5x', value: 0.5, color: '#64748b' },
+  { label: '5x', value: 5.0, color: '#ec4899' }
+];
 
 const tg = window.Telegram?.WebApp;
 
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   initApp();
+  drawWheel(0);
 });
 
 async function initApp() {
@@ -37,19 +54,52 @@ async function initApp() {
     await syncUser(currentUserId, username, firstName);
     await loadLobby();
 
-    setInterval(loadLobby, 4000); // Poll lobby every 4 sec
+    setInterval(() => {
+      if (currentGame === 'coinflip') loadLobby();
+    }, 4000);
   } catch (error) {
     console.error('App init error:', error);
   }
 }
 
+// GAME SWITCHER
+function switchGame(game) {
+  currentGame = game;
+  const coinSection = document.getElementById('coinflip-game-section');
+  const wheelSection = document.getElementById('wheel-game-section');
+  const coinTab = document.getElementById('tab-coinflip');
+  const wheelTab = document.getElementById('tab-wheel');
+
+  if (game === 'coinflip') {
+    if (coinSection) coinSection.style.display = 'block';
+    if (wheelSection) wheelSection.style.display = 'none';
+    if (coinTab) { coinTab.style.background = '#3b82f6'; coinTab.style.color = '#fff'; }
+    if (wheelTab) { wheelTab.style.background = '#1e293b'; wheelTab.style.color = '#94a3b8'; }
+  } else {
+    if (coinSection) coinSection.style.display = 'none';
+    if (wheelSection) wheelSection.style.display = 'block';
+    if (wheelTab) { wheelTab.style.background = '#f59e0b'; wheelTab.style.color = '#fff'; }
+    if (coinTab) { coinTab.style.background = '#1e293b'; coinTab.style.color = '#94a3b8'; }
+    drawWheel(wheelAngle);
+  }
+}
+
 function setupEventListeners() {
-  // Amount Selection
+  // Coin Flip Amount Selection
   document.querySelectorAll('.amount-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       selectedAmount = Number(btn.getAttribute('data-amount'));
+    });
+  });
+
+  // Wheel Amount Selection
+  document.querySelectorAll('.wheel-amount-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.wheel-amount-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedWheelAmount = Number(btn.getAttribute('data-amount'));
     });
   });
 
@@ -66,13 +116,11 @@ function setupEventListeners() {
   const createBtn = document.getElementById('create-game-btn');
   if (createBtn) createBtn.addEventListener('click', handleCreateChallenge);
 
+  // Spin Wheel Button
+  const spinBtn = document.getElementById('spin-wheel-btn');
+  if (spinBtn) spinBtn.addEventListener('click', handleSpinWheel);
+
   // Deposit Modal Triggers
-  const openDepositBtn = document.getElementById('open-deposit-btn');
-  if (openDepositBtn) openDepositBtn.addEventListener('click', openDepositModal);
-
-  const closeDepositBtn = document.getElementById('close-deposit-btn');
-  if (closeDepositBtn) closeDepositBtn.addEventListener('click', closeDepositModal);
-
   const payBtn = document.getElementById('pay-btn');
   if (payBtn) payBtn.addEventListener('click', executeChapaPay);
 }
@@ -97,6 +145,126 @@ async function syncUser(telegramId, username, firstName) {
 function updateBalance(balance) {
   const el = document.getElementById('user-balance');
   if (el) el.textContent = Number(balance || 0).toLocaleString();
+}
+
+// ==========================================
+// 🎡 WHEEL OF FORTUNE CANVAS & LOGIC
+// ==========================================
+
+function drawWheel(angle) {
+  const canvas = document.getElementById('wheel-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const width = canvas.width;
+  const height = canvas.height;
+  const radius = width / 2;
+  const sliceAngle = (2 * Math.PI) / wheelSlices.length;
+
+  ctx.clearRect(0, 0, width, height);
+
+  wheelSlices.forEach((slice, i) => {
+    const startAngle = angle + i * sliceAngle;
+    const endAngle = startAngle + sliceAngle;
+
+    // Draw Slice
+    ctx.beginPath();
+    ctx.moveTo(radius, radius);
+    ctx.arc(radius, radius, radius - 5, startAngle, endAngle);
+    ctx.closePath();
+    ctx.fillStyle = slice.color;
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#0f172a';
+    ctx.stroke();
+
+    // Draw Text
+    ctx.save();
+    ctx.translate(radius, radius);
+    ctx.rotate(startAngle + sliceAngle / 2);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.fillText(slice.label, radius - 20, 6);
+    ctx.restore();
+  });
+
+  // Inner Circle
+  ctx.beginPath();
+  ctx.arc(radius, radius, 25, 0, 2 * Math.PI);
+  ctx.fillStyle = '#0f172a';
+  ctx.fill();
+  ctx.strokeStyle = '#f59e0b';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+}
+
+async function handleSpinWheel() {
+  if (isSpinning) return;
+
+  const btn = document.getElementById('spin-wheel-btn');
+  try {
+    isSpinning = true;
+    if (btn) btn.disabled = true;
+
+    const res = await fetch('/api/wheel/spin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: currentUserId,
+        amount: selectedWheelAmount
+      })
+    });
+
+    const data = await res.json();
+    if (!data.success) {
+      showMessage(data.message || 'Spin failed!');
+      isSpinning = false;
+      if (btn) btn.disabled = false;
+      return;
+    }
+
+    // Calculate rotation angle for chosen slice
+    const sliceIndex = data.sliceIndex;
+    const sliceAngle = (2 * Math.PI) / wheelSlices.length;
+    const targetSliceAngle = (3 * Math.PI / 2) - (sliceIndex * sliceAngle) - (sliceAngle / 2);
+    const totalRotation = (2 * Math.PI * 5) + targetSliceAngle; // 5 Full spins
+
+    let startTime = null;
+    const duration = 4000; // 4 seconds spin
+
+    function animate(timestamp) {
+      if (!startTime) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Ease-out effect
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+      const currentAngle = wheelAngle + (totalRotation * easeOut);
+
+      drawWheel(currentAngle % (2 * Math.PI));
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        wheelAngle = targetSliceAngle % (2 * Math.PI);
+        isSpinning = false;
+        if (btn) btn.disabled = false;
+
+        updateBalance(data.newBalance);
+        if (data.payout > 0) {
+          showMessage(`🎉 CONGRATS! You won ${data.payout} ETB (${data.multiplier}x)!`);
+        } else {
+          showMessage('❌ No luck this time! Try again.');
+        }
+      }
+    }
+
+    requestAnimationFrame(animate);
+  } catch (err) {
+    isSpinning = false;
+    if (btn) btn.disabled = false;
+    showMessage('Error processing spin.');
+  }
 }
 
 // CREATE CHALLENGE
