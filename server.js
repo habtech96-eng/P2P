@@ -217,61 +217,6 @@ app.post('/api/wheel/spin', async (req, res) => {
   }
 });
 
-// ==========================================
-// ⚽ 6. PENALTY SHOOTOUT ENDPOINT
-// ==========================================
-app.post('/api/penalty/shoot', async (req, res) => {
-  try {
-    const { userId, amount, target } = req.body;
-    const betAmount = Number(amount);
-    const tid = String(userId);
-
-    const validTargets = ['top_left', 'top_right', 'center', 'bottom_left', 'bottom_right'];
-    if (!tid || isNaN(betAmount) || betAmount <= 0 || !validTargets.includes(target)) {
-      return res.status(400).json({ success: false, message: 'Invalid shot request' });
-    }
-
-    // Check Balance
-    const userResult = await db.select().from(users).where(eq(users.telegramId, tid)).limit(1);
-    if (!userResult.length || Number(userResult[0].balance) < betAmount) {
-      return res.status(400).json({ success: false, message: 'በቂ ሂሳብ የለዎትም!' });
-    }
-
-    // Keeper Dive Logic
-    const keeperDive = validTargets[Math.floor(Math.random() * validTargets.length)];
-    const isGoal = target !== keeperDive;
-    const multiplier = isGoal ? 1.9 : 0;
-    const payout = betAmount * multiplier;
-    const netChange = payout - betAmount;
-
-    // Update Balance
-    const updatedUser = await db.update(users)
-      .set({ balance: sql`${users.balance} + ${netChange}` })
-      .where(eq(users.telegramId, tid))
-      .returning();
-
-    // Record Penalty History
-    await db.insert(penaltyBets).values({
-      userId: tid,
-      amount: betAmount,
-      playerTarget: target,
-      keeperDive: keeperDive,
-      isGoal: isGoal ? 'YES' : 'NO',
-      payout: Math.floor(payout)
-    });
-
-    res.json({
-      success: true,
-      isGoal,
-      keeperDive,
-      payout,
-      newBalance: updatedUser[0].balance
-    });
-  } catch (err) {
-    console.error('Penalty Error:', err.message);
-    res.status(500).json({ success: false, message: 'Penalty game server error' });
-  }
-});
 
 // 7. Add / Refill Balance API
 app.post('/api/user/add-balance', async (req, res) => {

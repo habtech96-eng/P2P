@@ -4,6 +4,8 @@ const express = require('express');
 const axios = require('axios');
 require('dotenv').config();
 
+const penaltyRouter = require('./routes/penalty');
+
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const WEB_APP_URL = process.env.WEB_APP_URL || 'https://p2p-coinflip-game.onrender.com';
 const PORT = process.env.PORT || 3000;
@@ -16,11 +18,15 @@ if (!BOT_TOKEN) {
 const bot = new Telegraf(BOT_TOKEN);
 const app = express();
 
-// Express health check endpoint
+// Express JSON middleware & Routes
 app.use(express.json());
+app.use('/api/penalty', penaltyRouter);
+
+// Express health check endpoint
 app.get('/', (req, res) => {
   res.send('🤖 Telegram Bot & WebApp Service is Live!');
 });
+
 
 // 1. Menu Button Setup
 bot.telegram.setChatMenuButton({
