@@ -1,6 +1,7 @@
 cat << 'EOF' > bot.js
 const { Telegraf, Markup } = require('telegraf');
 const express = require('express');
+const axios = require('axios');
 require('dotenv').config();
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
@@ -15,7 +16,7 @@ if (!BOT_TOKEN) {
 const bot = new Telegraf(BOT_TOKEN);
 const app = express();
 
-// Express health check endpoint (Render ሰርቨሩ እንዳይዘጋ)
+// Express health check endpoint
 app.use(express.json());
 app.get('/', (req, res) => {
   res.send('🤖 Telegram Bot & WebApp Service is Live!');
@@ -89,9 +90,23 @@ bot.action('HOW_TO_PLAY', (ctx) => {
   return ctx.replyWithMarkdown(helpText);
 });
 
+// 7. SELF-PING LOGIC (ሰርቨሩ እንዳይተኛ ራሱን በየ 5 ደቂቃው ጥያቄ ይልካል)
+const keepAlive = () => {
+  setInterval(async () => {
+    try {
+      await axios.get(WEB_APP_URL);
+      console.log('🔄 Self-ping sent successfully to keep server active!');
+    } catch (err) {
+      console.error('⚠️ Self-ping error:', err.message);
+    }
+  }, 5 * 60 * 1000); // በየ 5 ደቂቃው (300,000 ms)
+};
+
 // Start Express Server & Bot
 app.listen(PORT, () => {
   console.log(`🌐 Server running on port ${PORT}`);
+  keepAlive(); // Self-ping ሎጂኩን ያስነሳል
+  
   bot.launch().then(() => {
     console.log('🤖 Telegram Bot upgraded & running successfully!');
   }).catch((err) => {
