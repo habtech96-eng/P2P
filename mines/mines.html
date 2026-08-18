@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Mines - Bomb & Diamond</title>
+  <link rel="stylesheet" href="mines.css" />
+</head>
+<body>
+  <div class="mines-app">
+    <!-- HEADER & BALANCE -->
+    <header class="mines-header">
+      <div class="title-area">
+        <h1>💣 Mines</h1>
+        <span>Bomb & Diamond</span>
+      </div>
+      <div class="balance-box">
+        <small>BALANCE</small>
+        <div><strong id="user-balance">1000</strong> <small>ETB</small></div>
+      </div>
+    </header>
+
+    <!-- MAIN GAME PANEL -->
+    <main class="mines-container">
+      <!-- 5x5 GRID -->
+      <div id="mines-grid" class="mines-grid">
+        <!-- 25 Tiles will be generated dynamically by JS -->
+      </div>
+
+      <!-- CONTROLS BOARD -->
+      <section class="controls-card">
+        <!-- BET AMOUNT -->
+        <div class="form-group">
+          <label>Bet Amount (ETB)</label>
+          <input type="number" id="bet-amount" value="50" min="10" step="10" />
+        </div>
+
+        <!-- BOMB COUNT SELECTOR -->
+        <div class="form-group">
+          <label>Number of Mines 💣</label>
+          <select id="mines-count">
+            <option value="1">1 Mine (Safe / Low Risk)</option>
+            <option value="3" selected>3 Mines (Recommended)</option>
+            <option value="5">5 Mines (Medium Risk)</option>
+            <option value="10">10 Mines (High Risk)</option>
+          </select>
+        </div>
+
+        <!-- NEXT MULTIPLIER / CASHOUT DISPLAY -->
+        <div class="stats-row">
+          <div class="stat-box">
+            <span>Next Multiplier</span>
+            <strong id="next-mult">1.12x</strong>
+          </div>
+          <div class="stat-box highlight">
+            <span>Current Profit</span>
+            <strong id="current-profit">0 ETB</strong>
+          </div>
+        </div>
+
+        <!-- ACTION BUTTONS -->
+        <button id="start-btn" class="action-btn start">Start Game</button>
+        <button id="cashout-btn" class="action-btn cashout" style="display: none;" disabled>
+          Cashout (<span id="cashout-amount">0</span> ETB)
+        </button>
+      </section>
+    </main>
+  </div>
+
+  <script src="mines.js"></script>
+</body>
+</html>
