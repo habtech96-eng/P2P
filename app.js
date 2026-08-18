@@ -63,41 +63,41 @@ async function initApp() {
   }
 }
 
-// GAME SWITCHER
-function switchGame(game) {
-  currentGame = game;
-  const coinSection = document.getElementById('coinflip-game-section');
-  const wheelSection = document.getElementById('wheel-game-section');
-  const penaltySection = document.getElementById('penalty-game-section');
-
-  const coinTab = document.getElementById('tab-coinflip');
-  const wheelTab = document.getElementById('tab-wheel');
-  const penaltyTab = document.getElementById('tab-penalty');
-
-  // Reset tab styles
-  [coinTab, wheelTab, penaltyTab].forEach(tab => {
-    if (tab) {
-      tab.style.background = '#1e293b';
-      tab.style.color = '#94a3b8';
-    }
-  });
-
+// 1. Switch Game Tabs Properly
+function switchGame(gameType) {
   // Hide all sections
-  if (coinSection) coinSection.style.display = 'none';
-  if (wheelSection) wheelSection.style.display = 'none';
-  if (penaltySection) penaltySection.style.display = 'none';
+  document.querySelectorAll('.game-section').forEach(sec => sec.classList.add('hidden'));
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
 
-  // Activate selected section & tab
-  if (game === 'coinflip') {
-    if (coinSection) coinSection.style.display = 'block';
-    if (coinTab) { coinTab.style.background = '#3b82f6'; coinTab.style.color = '#fff'; }
-  } else if (game === 'wheel') {
-    if (wheelSection) wheelSection.style.display = 'block';
-    if (wheelTab) { wheelTab.style.background = '#f59e0b'; wheelTab.style.color = '#fff'; }
-    drawWheel(wheelAngle);
-  } else if (game === 'penalty') {
-    if (penaltySection) penaltySection.style.display = 'block';
-    if (penaltyTab) { penaltyTab.style.background = '#10b981'; penaltyTab.style.color = '#fff'; }
+  // Show selected section & activate tab
+  const activeSection = document.getElementById(`${gameType}-game-section`);
+  const activeTab = document.getElementById(`tab-${gameType}`);
+
+  if (activeSection) activeSection.classList.remove('hidden');
+  if (activeTab) activeTab.classList.add('active');
+
+  // Initialize Mines Grid if switching to mines
+  if (gameType === 'mines') {
+    initMinesGrid();
+  }
+}
+
+// 2. Dynamically Render 5x5 Grid Cells
+function initMinesGrid() {
+  const gridContainer = document.getElementById('mines-grid');
+  if (!gridContainer) return;
+  
+  // Render 25 tiles if container is empty
+  if (gridContainer.children.length === 0) {
+    gridContainer.innerHTML = '';
+    for (let i = 0; i < 25; i++) {
+      const tile = document.createElement('button');
+      tile.className = 'mines-tile';
+      tile.dataset.index = i;
+      tile.innerText = '❓';
+      tile.style.cssText = 'padding: 15px; font-size: 18px; background: #1e293b; border: 1px solid #334155; border-radius: 8px; cursor: pointer;';
+      gridContainer.appendChild(tile);
+    }
   }
 }
 
