@@ -21,6 +21,7 @@
     "express": "^5.2.1",
     "node-telegram-bot-api": "^1.2.0",
     "pg": "^8.23.0",
+    "postgres": "^3.4.9",
     "telegraf": "^4.16.3"
   }
 }
