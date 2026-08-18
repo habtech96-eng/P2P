@@ -3,8 +3,13 @@ let selectedAmount = 10;
 let selectedChoice = 'HEADS';
 let selectedWheelAmount = 10;
 let selectedPenaltyAmount = 10;
+let selectedMinesAmount = 10;
 let currentUserId = null;
-let currentGame = 'coinflip'; // 'coinflip', 'wheel', or 'penalty'
+let currentGame = 'coinflip'; // 'coinflip', 'wheel', 'penalty', or 'mines'
+
+// MINES STATE VARIABLES
+let currentMinesGameId = null;
+let isMinesActive = false;
 
 // WHEEL CONFIGURATION
 let wheelAngle = 0;
@@ -43,7 +48,7 @@ async function initApp() {
     const username = tgUser?.username || tgUser?.first_name || 'Guest User';
     const firstName = tgUser?.first_name || 'Guest';
 
-    // Update UI
+    // Update UI Profile
     const usernameEl = document.getElementById('username');
     const avatarEl = document.getElementById('avatar-letter');
     const statusEl = document.getElementById('tg-status');
@@ -63,9 +68,11 @@ async function initApp() {
   }
 }
 
-// 1. Switch Game Tabs Properly
+// 1. Switch Game Tabs
 function switchGame(gameType) {
-  // Hide all sections
+  currentGame = gameType;
+
+  // Hide all game sections and deactivate tabs
   document.querySelectorAll('.game-section').forEach(sec => sec.classList.add('hidden'));
   document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
 
@@ -76,18 +83,17 @@ function switchGame(gameType) {
   if (activeSection) activeSection.classList.remove('hidden');
   if (activeTab) activeTab.classList.add('active');
 
-  // Initialize Mines Grid if switching to mines
+  // Initialize Mines Grid when switching to mines
   if (gameType === 'mines') {
     initMinesGrid();
   }
 }
 
-// 2. Dynamically Render 5x5 Grid Cells
+// 2. Render 5x5 Mines Grid
 function initMinesGrid() {
   const gridContainer = document.getElementById('mines-grid');
   if (!gridContainer) return;
   
-  // Render 25 tiles if container is empty
   if (gridContainer.children.length === 0) {
     gridContainer.innerHTML = '';
     for (let i = 0; i < 25; i++) {
@@ -95,14 +101,16 @@ function initMinesGrid() {
       tile.className = 'mines-tile';
       tile.dataset.index = i;
       tile.innerText = '❓';
-      tile.style.cssText = 'padding: 15px; font-size: 18px; background: #1e293b; border: 1px solid #334155; border-radius: 8px; cursor: pointer;';
+      tile.style.cssText = 'padding: 15px; font-size: 18px; background: #1e293b; border: 1px solid #334155; border-radius: 8px; cursor: pointer; transition: transform 0.1s;';
+      
+      tile.addEventListener('click', () => handleMinesTileClick(i, tile));
       gridContainer.appendChild(tile);
     }
   }
 }
 
 function setupEventListeners() {
-  // Coin Flip Amount Selection
+  // Coinflip Amount Selection
   document.querySelectorAll('.amount-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('active'));
@@ -129,6 +137,16 @@ function setupEventListeners() {
     });
   });
 
+  // Mines Amount Selection
+  document.querySelectorAll('.mines-amount-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (isMinesActive) return;
+      document.querySelectorAll('.mines-amount-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedMinesAmount = Number(btn.getAttribute('data-amount'));
+    });
+  });
+
   // Choice Selection (HEADS / TAILS)
   document.querySelectorAll('.coin-choice').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -138,15 +156,20 @@ function setupEventListeners() {
     });
   });
 
-  // Create Challenge Button
+  // Action Buttons
   const createBtn = document.getElementById('create-game-btn');
   if (createBtn) createBtn.addEventListener('click', handleCreateChallenge);
 
-  // Spin Wheel Button
   const spinBtn = document.getElementById('spin-wheel-btn');
   if (spinBtn) spinBtn.addEventListener('click', handleSpinWheel);
 
-  // Deposit Modal Triggers
+  const startMinesBtn = document.getElementById('start-mines-btn');
+  if (startMinesBtn) startMinesBtn.addEventListener('click', handleStartMinesGame);
+
+  const cashoutMinesBtn = document.getElementById('cashout-mines-btn');
+  if (cashoutMinesBtn) cashoutMinesBtn.addEventListener('click', handleMinesCashout);
+
+  // Deposit Modal Actions
   const payBtn = document.getElementById('pay-btn');
   if (payBtn) payBtn.addEventListener('click', executeChapaPay);
 }
@@ -174,6 +197,147 @@ function updateBalance(balance) {
 }
 
 // ==========================================
+// 💣 MINES GAME LOGIC
+// ==========================================
+
+async function handleStartMinesGame() {
+  const minesCountSelect = document.getElementById('mines-count-select');
+  const minesCount = minesCountSelect ? Number(minesCountSelect.value) : 3;
+
+  try {
+    const res = await fetch('/api/mines/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: currentUserId,
+        amount: selectedMinesAmount,
+        minesCount: minesCount
+      })
+    });
+
+    const data = await res.json();
+    if (!data.success) {
+      showMessage(data.message || 'ጨዋታ መጀመር አልተቻለም!');
+      return;
+    }
+
+    currentMinesGameId = data.gameId;
+    isMinesActive = true;
+    updateBalance(data.newBalance);
+
+    // Reset UI for Game
+    resetMinesBoard();
+    document.getElementById('start-mines-btn')?.classList.add('hidden');
+    const cashoutBtn = document.getElementById('cashout-mines-btn');
+    if (cashoutBtn) {
+      cashoutBtn.classList.remove('hidden');
+      cashoutBtn.disabled = true;
+    }
+    
+    document.getElementById('mines-next-mult').innerText = '1.00x';
+    document.getElementById('mines-profit').innerText = '0 ETB';
+    document.getElementById('mines-cashout-val').innerText = '0';
+
+  } catch (err) {
+    showMessage('የኔትወርክ ስህተት አጋጥሟል!');
+  }
+}
+
+async function handleMinesTileClick(tileIndex, tileElement) {
+  if (!isMinesActive || !currentMinesGameId || tileElement.disabled) return;
+
+  tileElement.disabled = true;
+
+  try {
+    const res = await fetch('/api/mines/reveal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gameId: currentMinesGameId, tileIndex })
+    });
+
+    const data = await res.json();
+    if (!data.success) {
+      showMessage(data.message || 'ችግር አጋጥሟል!');
+      return;
+    }
+
+    if (data.hitMine) {
+      tileElement.innerText = '💣';
+      tileElement.style.background = '#ef4444';
+      revealAllMines(data.mineLocations);
+      endMinesGame();
+      showMessage('💥 ቦምቡ ፈነዳ! ተሸንፈዋል!');
+    } else {
+      tileElement.innerText = '💎';
+      tileElement.style.background = '#10b981';
+
+      document.getElementById('mines-next-mult').innerText = `${data.multiplier}x`;
+      const currentWin = Math.floor(selectedMinesAmount * data.multiplier);
+      document.getElementById('mines-profit').innerText = `${currentWin - selectedMinesAmount} ETB`;
+      
+      const cashoutBtn = document.getElementById('cashout-mines-btn');
+      if (cashoutBtn) {
+        cashoutBtn.disabled = false;
+        document.getElementById('mines-cashout-val').innerText = currentWin;
+      }
+    }
+  } catch (err) {
+    showMessage('መረጃ መላክ አልተቻለም!');
+  }
+}
+
+async function handleMinesCashout() {
+  if (!isMinesActive || !currentMinesGameId) return;
+
+  try {
+    const res = await fetch('/api/mines/cashout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gameId: currentMinesGameId })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      updateBalance(data.newBalance);
+      revealAllMines(data.mineLocations);
+      endMinesGame();
+      showMessage(`🎉 በስኬት ወጥተዋል! +${data.winAmount} ETB ሂሳብዎ ላይ ተጨምሯል!`);
+    } else {
+      showMessage(data.message || 'Cashout ማድረግ አልተቻለም!');
+    }
+  } catch (err) {
+    showMessage('የCashout ችግር አጋጥሟል!');
+  }
+}
+
+function resetMinesBoard() {
+  const tiles = document.querySelectorAll('.mines-tile');
+  tiles.forEach(tile => {
+    tile.innerText = '❓';
+    tile.disabled = false;
+    tile.style.background = '#1e293b';
+  });
+}
+
+function revealAllMines(mineLocations = []) {
+  const tiles = document.querySelectorAll('.mines-tile');
+  tiles.forEach((tile, idx) => {
+    tile.disabled = true;
+    if (mineLocations.includes(idx) && tile.innerText !== '💣') {
+      tile.innerText = '💣';
+      tile.style.background = '#ef4444';
+    }
+  });
+}
+
+function endMinesGame() {
+  isMinesActive = false;
+  currentMinesGameId = null;
+  document.getElementById('start-mines-btn')?.classList.remove('hidden');
+  document.getElementById('cashout-mines-btn')?.classList.add('hidden');
+}
+
+// ==========================================
 // 🎡 WHEEL OF FORTUNE CANVAS & LOGIC
 // ==========================================
 
@@ -192,7 +356,6 @@ function drawWheel(angle) {
     const startAngle = angle + i * sliceAngle;
     const endAngle = startAngle + sliceAngle;
 
-    // Draw Slice
     ctx.beginPath();
     ctx.moveTo(radius, radius);
     ctx.arc(radius, radius, radius - 5, startAngle, endAngle);
@@ -203,7 +366,6 @@ function drawWheel(angle) {
     ctx.strokeStyle = '#0f172a';
     ctx.stroke();
 
-    // Draw Text
     ctx.save();
     ctx.translate(radius, radius);
     ctx.rotate(startAngle + sliceAngle / 2);
@@ -214,7 +376,6 @@ function drawWheel(angle) {
     ctx.restore();
   });
 
-  // Inner Circle
   ctx.beginPath();
   ctx.arc(radius, radius, 25, 0, 2 * Math.PI);
   ctx.fillStyle = '#0f172a';
@@ -249,21 +410,19 @@ async function handleSpinWheel() {
       return;
     }
 
-    // Calculate rotation angle for chosen slice
     const sliceIndex = data.sliceIndex;
     const sliceAngle = (2 * Math.PI) / wheelSlices.length;
     const targetSliceAngle = (3 * Math.PI / 2) - (sliceIndex * sliceAngle) - (sliceAngle / 2);
-    const totalRotation = (2 * Math.PI * 5) + targetSliceAngle; // 5 Full spins
+    const totalRotation = (2 * Math.PI * 5) + targetSliceAngle;
 
     let startTime = null;
-    const duration = 4000; // 4 seconds spin
+    const duration = 4000;
 
     function animate(timestamp) {
       if (!startTime) startTime = timestamp;
       const elapsed = timestamp - startTime;
       const progress = Math.min(elapsed / duration, 1);
       
-      // Ease-out effect
       const easeOut = 1 - Math.pow(1 - progress, 3);
       const currentAngle = wheelAngle + (totalRotation * easeOut);
 
@@ -333,7 +492,10 @@ async function shootPenalty(target) {
   }
 }
 
-// CREATE CHALLENGE
+// ==========================================
+// 🪙 COIN FLIP LOGIC
+// ==========================================
+
 async function handleCreateChallenge() {
   const btn = document.getElementById('create-game-btn');
   try {
@@ -364,7 +526,6 @@ async function handleCreateChallenge() {
   }
 }
 
-// LOAD ACTIVE LOBBY
 async function loadLobby() {
   const container = document.getElementById('lobby-container');
   if (!container) return;
@@ -398,7 +559,6 @@ async function loadLobby() {
   }
 }
 
-// ACCEPT CHALLENGE & FLIP COIN
 async function acceptChallenge(gameId) {
   try {
     const res = await fetch('/api/coinflip/accept', {
@@ -426,7 +586,6 @@ async function acceptChallenge(gameId) {
   }
 }
 
-// COIN FLIP ANIMATION
 function animateCoinFlip(winningChoice, onComplete) {
   const modal = document.getElementById('coin-modal');
   const coin = document.getElementById('coin');
@@ -460,7 +619,7 @@ function showMessage(msg) {
 }
 
 // ==========================================
-// 💳 CHAPA PAYMENT (DEPOSIT MODAL LOGIC)
+// 💳 CHAPA PAYMENT LOGIC
 // ==========================================
 
 function openDepositModal() {
@@ -490,7 +649,7 @@ async function executeChapaPay() {
 
     const tgUser = tg?.initDataUnsafe?.user;
     
-    const res = await fetch('/api/pay', {
+    const res = await fetch('/api/payment/pay', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

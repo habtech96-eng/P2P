@@ -1,0 +1,122 @@
+.coinflip-wrapper {
+  background: #1e1e2d;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  margin-bottom: 20px;
+}
+
+.coinflip-hero {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.coinflip-display {
+  font-size: 3rem;
+  margin-bottom: 8px;
+  animation: pulse 2s infinite;
+}
+
+.coinflip-hero h2 {
+  font-size: 1.4rem;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.coinflip-hero p {
+  color: #a0a0b8;
+  font-size: 0.85rem;
+}
+
+.section-label {
+  display: block;
+  color: #8f90a6;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+  letter-spacing: 0.5px;
+}
+
+.coinflip-vs-grid {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.coin-choice-btn {
+  flex: 1;
+  background: #2b2b3d;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  padding: 14px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #fff;
+}
+
+.coin-choice-btn.active {
+  border-color: #6c5ce7;
+  background: rgba(108, 92, 231, 0.15);
+}
+
+.choice-emoji {
+  font-size: 2rem;
+  margin-bottom: 4px;
+}
+
+.vs-badge {
+  color: #6c5ce7;
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+.chip-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.chip-btn {
+  background: #2b2b3d;
+  border: 1px solid #3d3d54;
+  border-radius: 8px;
+  color: #fff;
+  padding: 10px 0;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chip-btn.active {
+  background: #6c5ce7;
+  border-color: #6c5ce7;
+}
+
+.flip-action-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  padding: 14px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.secure-text {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #6c757d;
+  margin-top: 10px;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
