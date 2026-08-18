@@ -1,6 +1,6 @@
-const { pgTable, serial, text, integer, varchar, timestamp, doublePrecision } = require('drizzle-orm/pg-core');
+const { pgTable, serial, text, integer, varchar, timestamp, doublePrecision, boolean, jsonb, numeric } = require('drizzle-orm/pg-core');
 
-// Users Table
+// 1. Users Table
 const users = pgTable('users', {
   id: serial('id').primaryKey(),
   telegramId: text('telegram_id').notNull().unique(),
@@ -10,7 +10,7 @@ const users = pgTable('users', {
   createdAt: timestamp('created_at').defaultNow()
 });
 
-// Coin Flip Games Table
+// 2. Coin Flip Games Table
 const coinFlipGames = pgTable('coin_flip_games', {
   id: serial('id').primaryKey(),
   creatorId: text('creator_id').notNull(),
@@ -23,7 +23,7 @@ const coinFlipGames = pgTable('coin_flip_games', {
   createdAt: timestamp('created_at').defaultNow()
 });
 
-// Wheel Spins Table
+// 3. Wheel Spins Table
 const wheelSpins = pgTable('wheel_spins', {
   id: serial('id').primaryKey(),
   userId: text('user_id').notNull(),
@@ -33,16 +33,36 @@ const wheelSpins = pgTable('wheel_spins', {
   createdAt: timestamp('created_at').defaultNow()
 });
 
-// Penalty Bets Table (NEW ⚽)
+// 4. Penalty Bets Table
 const penaltyBets = pgTable('penalty_bets', {
   id: serial('id').primaryKey(),
   userId: text('user_id').notNull(),
   amount: integer('amount').notNull(),
-  playerTarget: varchar('player_target', { length: 20 }).notNull(), // 'top_left', 'top_right', etc.
-  keeperDive: varchar('keeper_dive', { length: 20 }).notNull(),
-  isGoal: varchar('is_goal', { length: 10 }).notNull(), // 'YES' or 'NO'
+  direction: varchar('direction', { length: 20 }).notNull(), // 'top_left', 'center', etc.
+  keeperDirection: varchar('keeper_direction', { length: 20 }).notNull(),
+  isGoal: boolean('is_goal').notNull(),
   payout: integer('payout').notNull(),
   createdAt: timestamp('created_at').defaultNow()
 });
 
-module.exports = { users, coinFlipGames, wheelSpins, penaltyBets };
+// 5. Mines Games Table (NEW 💣)
+const minesGames = pgTable('mines_games', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  betAmount: integer('bet_amount').notNull(),
+  minesCount: integer('mines_count').notNull(),
+  mineLocations: jsonb('mine_locations').notNull(), // Array of mine positions [e.g. 2, 5, 12]
+  revealedTiles: jsonb('revealed_tiles').default([]), // Array of revealed tile indexes
+  status: varchar('status', { length: 20 }).default('IN_PROGRESS').notNull(), // 'IN_PROGRESS', 'CASHOUT', 'BUSTED'
+  currentMultiplier: numeric('current_multiplier', { precision: 10, scale: 2 }).default('1.00').notNull(),
+  profit: integer('profit').default(0),
+  createdAt: timestamp('created_at').defaultNow()
+});
+
+module.exports = { 
+  users, 
+  coinFlipGames, 
+  wheelSpins, 
+  penaltyBets, 
+  minesGames 
+};

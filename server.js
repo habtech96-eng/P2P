@@ -5,7 +5,7 @@ const axios = require('axios');
 require('dotenv').config();
 
 const db = require('./db');
-const { users, coinFlipGames, wheelSpins, penaltyBets } = require('./schema');
+const { users, coinFlipGames, wheelSpins, penaltyBets, minesGames } = require('./schema');
 const { eq, sql } = require('drizzle-orm');
 
 const app = express();
@@ -19,7 +19,9 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// 1. User Sync
+// ==========================================
+// 1. USER SYNC & PROFILE
+// ==========================================
 app.post('/api/user/sync', async (req, res) => {
   try {
     const { telegramId, username, firstName } = req.body;
@@ -44,7 +46,9 @@ app.post('/api/user/sync', async (req, res) => {
   }
 });
 
-// 2. Create Coin Flip Challenge
+// ==========================================
+// 🪙 2. COIN FLIP ENDPOINTS
+// ==========================================
 app.post('/api/coinflip/create', async (req, res) => {
   try {
     const { userId, amount, choice } = req.body;
@@ -60,13 +64,11 @@ app.post('/api/coinflip/create', async (req, res) => {
       return res.status(400).json({ success: false, message: 'በቂ ሂሳብ የለዎትም!' });
     }
 
-    // Deduct balance
     const updatedUser = await db.update(users)
       .set({ balance: sql`${users.balance} - ${betAmount}` })
       .where(eq(users.telegramId, tid))
       .returning();
 
-    // Create Game
     const newGame = await db.insert(coinFlipGames).values({
       creatorId: tid,
       amount: betAmount,
@@ -80,7 +82,6 @@ app.post('/api/coinflip/create', async (req, res) => {
   }
 });
 
-// 3. Get Active Lobby Games
 app.get('/api/coinflip/lobby', async (req, res) => {
   try {
     const activeGames = await db.select().from(coinFlipGames).where(eq(coinFlipGames.status, 'WAITING'));
@@ -90,7 +91,6 @@ app.get('/api/coinflip/lobby', async (req, res) => {
   }
 });
 
-// 4. Accept Challenge & Determine Result
 app.post('/api/coinflip/accept', async (req, res) => {
   try {
     const { gameId, opponentId } = req.body;
@@ -104,34 +104,27 @@ app.post('/api/coinflip/accept', async (req, res) => {
     const currentGame = game[0];
     const betAmount = currentGame.amount;
 
-    // 🛑 ራስን በራስ ከመጫወት መከልከል
     if (String(currentGame.creatorId) === tid) {
       return res.status(400).json({ success: false, message: 'የራስዎን Challenge መቀበል አይችሉም!' });
     }
 
-    // Check Opponent Balance
     const opponent = await db.select().from(users).where(eq(users.telegramId, tid)).limit(1);
     if (!opponent.length || Number(opponent[0].balance) < betAmount) {
       return res.status(400).json({ success: false, message: 'በቂ ሂሳብ የለዎትም!' });
     }
 
-    // Deduct Opponent Balance
     await db.update(users).set({ balance: sql`${users.balance} - ${betAmount}` }).where(eq(users.telegramId, tid));
 
-    // Provably Fair Random Result (HEADS or TAILS)
     const outcomes = ['HEADS', 'TAILS'];
     const winningChoice = outcomes[Math.floor(Math.random() * 2)];
 
-    // Identify Winner
     const winnerId = currentGame.creatorChoice === winningChoice ? currentGame.creatorId : tid;
     const totalPrize = betAmount * 2;
 
-    // Credit Winner
     await db.update(users)
       .set({ balance: sql`${users.balance} + ${totalPrize}` })
       .where(eq(users.telegramId, winnerId));
 
-    // Mark Game Completed
     await db.update(coinFlipGames).set({
       opponentId: tid,
       winningChoice: winningChoice,
@@ -139,7 +132,6 @@ app.post('/api/coinflip/accept', async (req, res) => {
       status: 'COMPLETED'
     }).where(eq(coinFlipGames.id, Number(gameId)));
 
-    // Fetch updated balance for calling user
     const callingUser = await db.select().from(users).where(eq(users.telegramId, tid)).limit(1);
 
     res.json({
@@ -154,7 +146,7 @@ app.post('/api/coinflip/accept', async (req, res) => {
 });
 
 // ==========================================
-// 🎡 5. WHEEL OF FORTUNE SPIN ENDPOINT
+// 🎡 3. WHEEL OF FORTUNE ENDPOINT
 // ==========================================
 app.post('/api/wheel/spin', async (req, res) => {
   try {
@@ -166,37 +158,32 @@ app.post('/api/wheel/spin', async (req, res) => {
       return res.status(400).json({ success: false, message: 'እባክዎን ትክክለኛ የብር መጠን ይምረጡ!' });
     }
 
-    // 1. Check User Balance
     const userResult = await db.select().from(users).where(eq(users.telegramId, tid)).limit(1);
     if (!userResult.length || Number(userResult[0].balance) < betAmount) {
       return res.status(400).json({ success: false, message: 'በቂ ሂሳብ የለዎትም!' });
     }
 
-    // 2. Multiplier Configuration
     const slices = [
-      { multiplier: 0 },   // Index 0: 0x
-      { multiplier: 1.2 }, // Index 1: 1.2x
-      { multiplier: 1.5 }, // Index 2: 1.5x
-      { multiplier: 2.0 }, // Index 3: 2x
-      { multiplier: 0 },   // Index 4: 0x
-      { multiplier: 3.0 }, // Index 5: 3x
-      { multiplier: 0.5 }, // Index 6: 0.5x
-      { multiplier: 5.0 }  // Index 7: 5x
+      { multiplier: 0 },
+      { multiplier: 1.2 },
+      { multiplier: 1.5 },
+      { multiplier: 2.0 },
+      { multiplier: 0 },
+      { multiplier: 3.0 },
+      { multiplier: 0.5 },
+      { multiplier: 5.0 }
     ];
 
-    // Pick Random Slice
     const sliceIndex = Math.floor(Math.random() * slices.length);
     const chosenSlice = slices[sliceIndex];
     const payout = betAmount * chosenSlice.multiplier;
     const netChange = payout - betAmount;
 
-    // 3. Update Balance
     const updatedUser = await db.update(users)
       .set({ balance: sql`${users.balance} + ${netChange}` })
       .where(eq(users.telegramId, tid))
       .returning();
 
-    // 4. Record Wheel Spin History
     await db.insert(wheelSpins).values({
       userId: tid,
       amount: betAmount,
@@ -217,8 +204,221 @@ app.post('/api/wheel/spin', async (req, res) => {
   }
 });
 
+// ==========================================
+// ⚽ 4. PENALTY SHOOTOUT ENDPOINT
+// ==========================================
+app.post('/api/penalty/shoot', async (req, res) => {
+  try {
+    const { userId, amount, direction } = req.body;
+    const betAmount = Number(amount);
+    const tid = String(userId);
 
-// 7. Add / Refill Balance API
+    if (!tid || isNaN(betAmount) || betAmount <= 0 || !direction) {
+      return res.status(400).json({ success: false, message: 'መረጃው የተሟላ አይደለም!' });
+    }
+
+    const user = await db.select().from(users).where(eq(users.telegramId, tid)).limit(1);
+    if (!user.length || Number(user[0].balance) < betAmount) {
+      return res.status(400).json({ success: false, message: 'በቂ ሂሳብ የለዎትም!' });
+    }
+
+    const directions = ['top_left', 'center', 'top_right', 'bottom_left', 'bottom_right'];
+    const keeperDirection = directions[Math.floor(Math.random() * directions.length)];
+
+    const isGoal = direction !== keeperDirection;
+    const multiplier = 1.9;
+    const payout = isGoal ? Math.floor(betAmount * multiplier) : 0;
+    const netChange = payout - betAmount;
+
+    const updatedUser = await db.update(users)
+      .set({ balance: sql`${users.balance} + ${netChange}` })
+      .where(eq(users.telegramId, tid))
+      .returning();
+
+    await db.insert(penaltyBets).values({
+      userId: tid,
+      amount: betAmount,
+      direction,
+      keeperDirection,
+      isGoal,
+      payout
+    });
+
+    res.json({
+      success: true,
+      isGoal,
+      keeperDirection,
+      payout,
+      newBalance: updatedUser[0].balance
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ==========================================
+// 💣 5. MINES GAME ENDPOINTS
+// ==========================================
+
+// Helper to generate unique random mine locations (0-24)
+function generateMines(count) {
+  const positions = Array.from({ length: 25 }, (_, i) => i);
+  const mines = [];
+  for (let i = 0; i < count; i++) {
+    const randomIndex = Math.floor(Math.random() * positions.length);
+    mines.push(positions.splice(randomIndex, 1)[0]);
+  }
+  return mines;
+}
+
+// A. Start Mines Game
+app.post('/api/mines/start', async (req, res) => {
+  try {
+    const { userId, amount, minesCount } = req.body;
+    const betAmount = Number(amount);
+    const mCount = Number(minesCount);
+    const tid = String(userId);
+
+    if (!tid || isNaN(betAmount) || betAmount <= 0 || !mCount) {
+      return res.status(400).json({ success: false, message: 'ትክክለኛ መረጃ ያስገቡ!' });
+    }
+
+    const user = await db.select().from(users).where(eq(users.telegramId, tid)).limit(1);
+    if (!user.length || Number(user[0].balance) < betAmount) {
+      return res.status(400).json({ success: false, message: 'በቂ ሂሳብ የለዎትም!' });
+    }
+
+    // Deduct Balance
+    const updatedUser = await db.update(users)
+      .set({ balance: sql`${users.balance} - ${betAmount}` })
+      .where(eq(users.telegramId, tid))
+      .returning();
+
+    const mineLocations = generateMines(mCount);
+
+    const newGame = await db.insert(minesGames).values({
+      userId: tid,
+      betAmount,
+      minesCount: mCount,
+      mineLocations,
+      revealedTiles: [],
+      status: 'IN_PROGRESS',
+      currentMultiplier: '1.00',
+      profit: 0
+    }).returning();
+
+    res.json({
+      success: true,
+      gameId: newGame[0].id,
+      newBalance: updatedUser[0].balance
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// B. Reveal Tile
+app.post('/api/mines/reveal', async (req, res) => {
+  try {
+    const { gameId, tileIndex } = req.body;
+    const idx = Number(tileIndex);
+
+    const game = await db.select().from(minesGames).where(eq(minesGames.id, Number(gameId))).limit(1);
+    if (!game.length || game[0].status !== 'IN_PROGRESS') {
+      return res.status(400).json({ success: false, message: 'ጨዋታው ተጠናቋል!' });
+    }
+
+    const currentGame = game[0];
+    const mines = currentGame.mineLocations;
+
+    // BUSTED (Hit a Mine)
+    if (mines.includes(idx)) {
+      await db.update(minesGames)
+        .set({ status: 'BUSTED' })
+        .where(eq(minesGames.id, currentGame.id));
+
+      return res.json({
+        success: true,
+        hitMine: true,
+        status: 'BUSTED',
+        mineLocations: mines
+      });
+    }
+
+    // SAFE (Diamond)
+    const revealed = [...(currentGame.revealedTiles || []), idx];
+    
+    // Multiplier Calculation Formula
+    const safeTiles = 25 - currentGame.minesCount;
+    const revealedCount = revealed.length;
+    let nextMult = 1.0;
+    
+    for (let i = 0; i < revealedCount; i++) {
+      nextMult *= (25 - i) / (safeTiles - i);
+    }
+    nextMult = parseFloat((nextMult * 0.95).toFixed(2)); // 5% House edge
+
+    await db.update(minesGames)
+      .set({
+        revealedTiles: revealed,
+        currentMultiplier: String(nextMult)
+      })
+      .where(eq(minesGames.id, currentGame.id));
+
+    res.json({
+      success: true,
+      hitMine: false,
+      status: 'IN_PROGRESS',
+      multiplier: nextMult,
+      revealedTiles: revealed
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// C. Cashout Mines Game
+app.post('/api/mines/cashout', async (req, res) => {
+  try {
+    const { gameId } = req.body;
+
+    const game = await db.select().from(minesGames).where(eq(minesGames.id, Number(gameId))).limit(1);
+    if (!game.length || game[0].status !== 'IN_PROGRESS') {
+      return res.status(400).json({ success: false, message: 'ወደ ሂሳብ ማስገባት አይቻልም!' });
+    }
+
+    const currentGame = game[0];
+    const mult = parseFloat(currentGame.currentMultiplier);
+    const winAmount = Math.floor(currentGame.betAmount * mult);
+
+    // Credit User
+    const updatedUser = await db.update(users)
+      .set({ balance: sql`${users.balance} + ${winAmount}` })
+      .where(eq(users.telegramId, currentGame.userId))
+      .returning();
+
+    await db.update(minesGames)
+      .set({
+        status: 'CASHOUT',
+        profit: winAmount - currentGame.betAmount
+      })
+      .where(eq(minesGames.id, currentGame.id));
+
+    res.json({
+      success: true,
+      status: 'CASHOUT',
+      winAmount,
+      newBalance: updatedUser[0].balance,
+      mineLocations: currentGame.mineLocations
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ==========================================
+// 💳 6. BALANCE & PAYMENT INTEGRATION
+// ==========================================
 app.post('/api/user/add-balance', async (req, res) => {
   try {
     const { userId, amount } = req.body;
@@ -240,11 +440,6 @@ app.post('/api/user/add-balance', async (req, res) => {
   }
 });
 
-// ==========================================
-// 💳 8. CHAPA PAYMENT INTEGRATION
-// ==========================================
-
-// A. Initialize Chapa Payment
 app.post('/api/pay', async (req, res) => {
   try {
     const { userId, amount, email, firstName } = req.body;
@@ -291,7 +486,6 @@ app.post('/api/pay', async (req, res) => {
   }
 });
 
-// B. Chapa Webhook
 app.post('/api/chapa-webhook', async (req, res) => {
   try {
     const { status, tx_ref } = req.body;
