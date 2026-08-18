@@ -1,7 +1,7 @@
 require('dotenv').config();
 
 module.exports = {
-  schema: './schema.js',
+  schema: './src/db/schema.js',
   out: './drizzle',
   dialect: 'postgresql',
   dbCredentials: {
