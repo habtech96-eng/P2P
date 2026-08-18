@@ -29,10 +29,10 @@ app.use('/api/payment', paymentRoutes);
 app.use('/api/penalty', penaltyRoutes);
 app.use('/api/wheel', wheelRoutes);
 
-// 2. Serve Static Frontend SPA Fallback (ከ APIዎች በኋላ)
-app.get('*', (req, res) => {
+app.get('/{*splat}', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
+
 
 // Start Server
 app.listen(PORT, '0.0.0.0', () => {
