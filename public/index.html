@@ -4,311 +4,334 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>P2P Arena & Casino</title>
-  <link rel="stylesheet" href="style.css" />
+  
+  <!-- Updated Stylesheet Path -->
+  <link rel="stylesheet" href="css/style.css" />
+  
+  <!-- Telegram Web App SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-  <div class="app">
+  <div class="app-container">
     
-    <!-- HEADER -->
+    <!-- TOP HEADER -->
     <header class="app-header">
-      <div class="brand">
-        <div class="brand-icon">🎰</div>
-        <div>
+      <div class="brand-group">
+        <div class="brand-logo">🎰</div>
+        <div class="brand-title">
           <h1>P2P Arena</h1>
-          <span>Instant Games</span>
+          <span class="badge-live">LIVE GAMING</span>
         </div>
       </div>
-      <div class="online-dot"></div>
+      <div class="header-status">
+        <span class="pulse-dot"></span>
+        <span class="status-label">Online</span>
+      </div>
     </header>
 
-    <!-- USER PROFILE CARD -->
-    <section class="user-card">
-      <div class="avatar">
-        <span id="avatar-letter">G</span>
-      </div>
-      <div class="user-info">
-        <span class="welcome">Welcome back</span>
-        <strong id="username">Guest</strong>
-        <small>
-          <span class="status-dot"></span>
-          <span id="tg-status">Connecting...</span>
-        </small>
-      </div>
-    </section>
-
-    <!-- WALLET & BALANCE CARD -->
-    <section class="wallet-card">
-      <div class="wallet-top">
-        <div>
-          <span class="wallet-label">AVAILABLE BALANCE</span>
-          <div class="balance">
-            <span id="user-balance">0</span>
-            <small>ETB</small>
+    <!-- USER & BALANCE GLASS CARD -->
+    <section class="user-hero-card">
+      <div class="profile-meta">
+        <div class="avatar-ring">
+          <div class="avatar-inner" id="avatar-letter">G</div>
+        </div>
+        <div class="user-details">
+          <span class="greeting">Welcome back,</span>
+          <strong id="username" class="username">Guest</strong>
+          <div class="connection-status">
+            <span class="status-dot-sm"></span>
+            <small id="tg-status">Connecting...</small>
           </div>
         </div>
-        <div class="wallet-icon">💰</div>
       </div>
-      <div class="wallet-bottom">
-        <span>Secure Wallet</span>
-        <span>● Active</span>
+
+      <div class="balance-meta">
+        <div class="balance-info">
+          <span class="balance-caption">AVAILABLE BALANCE</span>
+          <div class="balance-display">
+            <span id="user-balance" class="balance-amount">0.00</span>
+            <span class="currency-tag">ETB</span>
+          </div>
+        </div>
+        <button onclick="openDepositModal()" class="btn-deposit-action" aria-label="Deposit Funds">
+          <span class="icon">💳</span>
+          <span>Deposit</span>
+        </button>
       </div>
-      <button onclick="openDepositModal()" class="refill-btn">
-        💳 ብር በ Chapa ጨምር (Deposit)
-      </button>
     </section>
 
-    <!-- NAVIGATION GAME TABS -->
-    <nav class="game-tabs">
-      <button id="tab-coinflip" class="tab-btn active" onclick="switchGame('coinflip')">
-        🪙 Coin Flip
+    <!-- GAME SELECTION TABS -->
+    <nav class="game-nav-tabs" role="tablist">
+      <button id="tab-coinflip" class="nav-tab active" onclick="switchGame('coinflip')" role="tab">
+        <span class="tab-icon">🪙</span>
+        <span class="tab-label">Coin Flip</span>
       </button>
-      <button id="tab-wheel" class="tab-btn" onclick="switchGame('wheel')">
-        🎡 Wheel
+      <button id="tab-wheel" class="nav-tab" onclick="switchGame('wheel')" role="tab">
+        <span class="tab-icon">🎡</span>
+        <span class="tab-label">Wheel</span>
       </button>
-      <button id="tab-penalty" class="tab-btn" onclick="switchGame('penalty')">
-        ⚽ Penalty
+      <button id="tab-penalty" class="nav-tab" onclick="switchGame('penalty')" role="tab">
+        <span class="tab-icon">⚽</span>
+        <span class="tab-label">Penalty</span>
       </button>
-      <button id="tab-mines" class="tab-btn" onclick="switchGame('mines')">
-        💣 Mines
+      <button id="tab-mines" class="nav-tab" onclick="switchGame('mines')" role="tab">
+        <span class="tab-icon">💣</span>
+        <span class="tab-label">Mines</span>
       </button>
     </nav>
 
-    <!-- 1. COIN FLIP GAME SECTION -->
-    <div id="coinflip-game-section" class="game-section">
-      <section class="bet-card">
-        <div class="section-title">
-          <div class="title-icon">⚔️</div>
-          <div>
-            <h2>Create Challenge</h2>
-            <p>Choose side and stake amount</p>
+    <!-- MAIN GAME ARENA -->
+    <main class="arena-content">
+
+      <!-- 1. COIN FLIP GAME SECTION -->
+      <section id="coinflip-game-section" class="game-view">
+        <div class="glass-card">
+          <div class="card-header">
+            <div class="card-icon gold-glow">⚔️</div>
+            <div>
+              <h2>Create Challenge</h2>
+              <p>Pick your side and stake your bet</p>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <div class="label-bar">
+              <label>Select Your Side</label>
+              <span class="sub-hint">Heads (King) / Tails (Eagle)</span>
+            </div>
+            <div class="prediction-grid">
+              <button type="button" class="btn-select-side coin-choice active" data-choice="HEADS">
+                <span class="side-icon">👑</span>
+                <span class="side-info">
+                  <strong>HEADS</strong>
+                  <small>King Side</small>
+                </span>
+              </button>
+              <button type="button" class="btn-select-side coin-choice" data-choice="TAILS">
+                <span class="side-icon">🦅</span>
+                <span class="side-info">
+                  <strong>TAILS</strong>
+                  <small>Eagle Side</small>
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <div class="label-bar">
+              <label>Stake Amount</label>
+              <span class="currency-badge">ETB</span>
+            </div>
+            <div class="preset-amount-grid">
+              <button type="button" class="btn-preset amount-btn active" data-amount="10"><strong>10</strong><span>ETB</span></button>
+              <button type="button" class="btn-preset amount-btn" data-amount="50"><strong>50</strong><span>ETB</span></button>
+              <button type="button" class="btn-preset amount-btn" data-amount="100"><strong>100</strong><span>ETB</span></button>
+              <button type="button" class="btn-preset amount-btn" data-amount="500"><strong>500</strong><span>ETB</span></button>
+            </div>
+          </div>
+
+          <button id="create-game-btn" class="btn-primary-action glow-gold" type="button">
+            <span>Create Challenge</span>
+            <span class="btn-arrow">→</span>
+          </button>
+          <div class="fairness-badge">
+            <span>🔒 Provably Fair System</span>
           </div>
         </div>
 
-        <div class="form-group">
-          <div class="label-row">
-            <label>Your Side</label>
-            <span class="hint">Select Heads or Tails</span>
+        <div class="glass-card mt-16">
+          <div class="card-header">
+            <div class="card-icon purple-glow">🎮</div>
+            <div>
+              <h2>Open Lobby</h2>
+              <p>Join real-time player challenges</p>
+            </div>
           </div>
-          <div class="prediction-grid">
-            <button type="button" class="prediction-btn coin-choice active" data-choice="HEADS">
-              <span class="prediction-icon">👑</span>
-              <span>
-                <strong>HEADS</strong>
-                <small>King Side</small>
-              </span>
-            </button>
-            <button type="button" class="prediction-btn coin-choice" data-choice="TAILS">
-              <span class="prediction-icon">🦅</span>
-              <span>
-                <strong>TAILS</strong>
-                <small>Eagle Side</small>
-              </span>
-            </button>
+          <div id="lobby-container" class="lobby-feed">
+            <div class="state-loading">
+              <div class="spinner"></div>
+              <span>Fetching available battles...</span>
+            </div>
           </div>
-        </div>
-
-        <div class="form-group">
-          <div class="label-row">
-            <label>Stake Amount</label>
-            <span class="currency">ETB</span>
-          </div>
-          <div class="amount-grid">
-            <button type="button" class="amount-btn active" data-amount="10"><strong>10</strong><span>ETB</span></button>
-            <button type="button" class="amount-btn" data-amount="50"><strong>50</strong><span>ETB</span></button>
-            <button type="button" class="amount-btn" data-amount="100"><strong>100</strong><span>ETB</span></button>
-            <button type="button" class="amount-btn" data-amount="500"><strong>500</strong><span>ETB</span></button>
-          </div>
-        </div>
-
-        <button id="create-game-btn" class="place-bet-btn" type="button">
-          <span>Create Challenge</span>
-          <span class="btn-arrow">→</span>
-        </button>
-        <p class="secure-text">🔒 100% Provably Fair Random System</p>
-      </section>
-
-      <section class="bets-section">
-        <div class="section-title">
-          <div class="title-icon purple">🎮</div>
-          <div>
-            <h2>Open Challenges</h2>
-            <p>Play against real players online</p>
-          </div>
-        </div>
-        <div id="lobby-container" class="bets-container">
-          <div class="loading-state">
-            <div class="loading-spinner"></div>
-            <span>Loading open challenges...</span>
-          </div>
-        </div>
-      </section>
-    </div>
-
-    <!-- 2. WHEEL OF FORTUNE SECTION -->
-    <div id="wheel-game-section" class="game-section hidden">
-      <section class="bet-card center-card">
-        <div class="section-title center-title">
-          <div class="title-icon wheel-bg">🎡</div>
-          <div>
-            <h2>Wheel of Fortune</h2>
-            <p>Spin to win up to 5x multipliers!</p>
-          </div>
-        </div>
-
-        <div class="wheel-wrapper">
-          <div class="wheel-pointer"></div>
-          <canvas id="wheel-canvas" width="260" height="260"></canvas>
-        </div>
-
-        <div class="form-group">
-          <div class="label-row">
-            <label>Spin Bet Amount</label>
-            <span class="currency">ETB</span>
-          </div>
-          <div class="amount-grid">
-            <button type="button" class="wheel-amount-btn active" data-amount="10"><strong>10</strong><span>ETB</span></button>
-            <button type="button" class="wheel-amount-btn" data-amount="50"><strong>50</strong><span>ETB</span></button>
-            <button type="button" class="wheel-amount-btn" data-amount="100"><strong>100</strong><span>ETB</span></button>
-            <button type="button" class="wheel-amount-btn" data-amount="500"><strong>500</strong><span>ETB</span></button>
-          </div>
-        </div>
-
-        <button id="spin-wheel-btn" class="place-bet-btn wheel-btn" type="button">
-          <span>Spin the Wheel 🎡</span>
-        </button>
-      </section>
-    </div>
-
-    <!-- 3. PENALTY SHOOTOUT SECTION -->
-    <div id="penalty-game-section" class="game-section hidden">
-      <section class="bet-card center-card">
-        <div class="section-title center-title">
-          <div class="title-icon penalty-bg">⚽</div>
-          <div>
-            <h2>Penalty Shootout</h2>
-            <p>ግብ ማስቆጠሪያ አቅጣጫ ይምረጡ (1.9x Win)</p>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <div class="label-row">
-            <label>Penalty Bet Amount</label>
-            <span class="currency">ETB</span>
-          </div>
-          <div class="amount-grid">
-            <button type="button" class="penalty-amount-btn active" data-amount="10"><strong>10</strong><span>ETB</span></button>
-            <button type="button" class="penalty-amount-btn" data-amount="50"><strong>50</strong><span>ETB</span></button>
-            <button type="button" class="penalty-amount-btn" data-amount="100"><strong>100</strong><span>ETB</span></button>
-            <button type="button" class="penalty-amount-btn" data-amount="500"><strong>500</strong><span>ETB</span></button>
-          </div>
-        </div>
-
-        <div class="goal-grid">
-          <button class="shot-btn" onclick="shootPenalty('top_left')">↖️ Top Left</button>
-          <button class="shot-btn" onclick="shootPenalty('center')">⬆️ Center</button>
-          <button class="shot-btn" onclick="shootPenalty('top_right')">↗️ Top Right</button>
-          <button class="shot-btn" onclick="shootPenalty('bottom_left')">↙️ Bottom Left</button>
-          <div class="keeper-box">🧤 Keeper</div>
-          <button class="shot-btn" onclick="shootPenalty('bottom_right')">↘️ Bottom Right</button>
         </div>
       </section>
-    </div>
 
-    <!-- 4. MINES GAME SECTION -->
-    <div id="mines-game-section" class="game-section hidden">
-      <section class="bet-card">
-        <div class="section-title">
-          <div class="title-icon mines-bg">💣</div>
-          <div>
-            <h2>Mines Game</h2>
-            <p>Find Diamonds & avoid the Bombs!</p>
+      <!-- 2. WHEEL OF FORTUNE SECTION -->
+      <section id="wheel-game-section" class="game-view hidden">
+        <div class="glass-card text-center">
+          <div class="card-header center-header">
+            <div class="card-icon purple-glow">🎡</div>
+            <div>
+              <h2>Wheel of Fortune</h2>
+              <p>Spin to land up to 5.0x multipliers!</p>
+            </div>
           </div>
-        </div>
 
-        <!-- 5x5 MINES GRID -->
-        <div id="mines-grid" class="mines-grid-container"></div>
-
-        <div class="form-group">
-          <label class="input-label">Bet Amount (ETB)</label>
-          <div class="amount-grid">
-            <button type="button" class="mines-amount-btn active" data-amount="10"><strong>10</strong><span>ETB</span></button>
-            <button type="button" class="mines-amount-btn" data-amount="50"><strong>50</strong><span>ETB</span></button>
-            <button type="button" class="mines-amount-btn" data-amount="100"><strong>100</strong><span>ETB</span></button>
-            <button type="button" class="mines-amount-btn" data-amount="500"><strong>500</strong><span>ETB</span></button>
+          <div class="wheel-stage">
+            <div class="wheel-pointer-arrow">▼</div>
+            <canvas id="wheel-canvas" width="260" height="260"></canvas>
           </div>
-        </div>
 
-        <div class="form-group mt-10">
-          <label class="input-label">Number of Mines 💣</label>
-          <select id="mines-count-select" class="custom-select">
-            <option value="1">1 Mine (Low Risk)</option>
-            <option value="3" selected>3 Mines (Recommended)</option>
-            <option value="5">5 Mines (Medium Risk)</option>
-            <option value="10">10 Mines (High Risk)</option>
-          </select>
-        </div>
-
-        <!-- STATS BOARD -->
-        <div class="mines-stats-card">
-          <div class="stat-box">
-            <span>Next Multiplier</span>
-            <strong id="mines-next-mult">1.12x</strong>
+          <div class="form-group">
+            <div class="label-bar">
+              <label>Spin Stake</label>
+              <span class="currency-badge">ETB</span>
+            </div>
+            <div class="preset-amount-grid">
+              <button type="button" class="btn-preset wheel-amount-btn active" data-amount="10"><strong>10</strong><span>ETB</span></button>
+              <button type="button" class="btn-preset wheel-amount-btn" data-amount="50"><strong>50</strong><span>ETB</span></button>
+              <button type="button" class="btn-preset wheel-amount-btn" data-amount="100"><strong>100</strong><span>ETB</span></button>
+              <button type="button" class="btn-preset wheel-amount-btn" data-amount="500"><strong>500</strong><span>ETB</span></button>
+            </div>
           </div>
-          <div class="stat-box">
-            <span>Current Profit</span>
-            <strong id="mines-profit" class="text-green">0 ETB</strong>
-          </div>
+
+          <button id="spin-wheel-btn" class="btn-primary-action glow-purple" type="button">
+            <span>Spin the Wheel 🎡</span>
+          </button>
         </div>
-
-        <button id="start-mines-btn" class="place-bet-btn mines-btn" type="button">
-          <span>Start Game 💣</span>
-        </button>
-
-        <button id="cashout-mines-btn" class="place-bet-btn cashout-btn hidden" type="button" disabled>
-          <span>Cashout (<span id="mines-cashout-val">0</span> ETB)</span>
-        </button>
       </section>
-    </div>
+
+      <!-- 3. PENALTY SHOOTOUT SECTION -->
+      <section id="penalty-game-section" class="game-view hidden">
+        <div class="glass-card text-center">
+          <div class="card-header center-header">
+            <div class="card-icon green-glow">⚽</div>
+            <div>
+              <h2>Penalty Shootout</h2>
+              <p>Outsmart the keeper for 1.9x payout</p>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <div class="label-bar">
+              <label>Penalty Stake</label>
+              <span class="currency-badge">ETB</span>
+            </div>
+            <div class="preset-amount-grid">
+              <button type="button" class="btn-preset penalty-amount-btn active" data-amount="10"><strong>10</strong><span>ETB</span></button>
+              <button type="button" class="btn-preset penalty-amount-btn" data-amount="50"><strong>50</strong><span>ETB</span></button>
+              <button type="button" class="btn-preset penalty-amount-btn" data-amount="100"><strong>100</strong><span>ETB</span></button>
+              <button type="button" class="btn-preset penalty-amount-btn" data-amount="500"><strong>500</strong><span>ETB</span></button>
+            </div>
+          </div>
+
+          <div class="goal-post-container">
+            <button class="btn-shot top-left" onclick="shootPenalty('top_left')">↖️ Top Left</button>
+            <button class="btn-shot top-center" onclick="shootPenalty('center')">⬆️ Center</button>
+            <button class="btn-shot top-right" onclick="shootPenalty('top_right')">↗️ Top Right</button>
+            <button class="btn-shot bottom-left" onclick="shootPenalty('bottom_left')">↙️ Bottom Left</button>
+            <div class="goalkeeper-avatar">🧤 Goalkeeper</div>
+            <button class="btn-shot bottom-right" onclick="shootPenalty('bottom_right')">↘️ Bottom Right</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. MINES GAME SECTION -->
+      <section id="mines-game-section" class="game-view hidden">
+        <div class="glass-card">
+          <div class="card-header">
+            <div class="card-icon red-glow">💣</div>
+            <div>
+              <h2>Mines Field</h2>
+              <p>Uncover Gems & avoid hidden Bombs!</p>
+            </div>
+          </div>
+
+          <!-- 5x5 MINES GRID -->
+          <div id="mines-grid" class="mines-matrix"></div>
+
+          <div class="form-group mt-16">
+            <label class="field-label">Bet Amount (ETB)</label>
+            <div class="preset-amount-grid">
+              <button type="button" class="btn-preset mines-amount-btn active" data-amount="10"><strong>10</strong><span>ETB</span></button>
+              <button type="button" class="btn-preset mines-amount-btn" data-amount="50"><strong>50</strong><span>ETB</span></button>
+              <button type="button" class="btn-preset mines-amount-btn" data-amount="100"><strong>100</strong><span>ETB</span></button>
+              <button type="button" class="btn-preset mines-amount-btn" data-amount="500"><strong>500</strong><span>ETB</span></button>
+            </div>
+          </div>
+
+          <div class="form-group mt-12">
+            <label class="field-label">Bomb Density 💣</label>
+            <div class="select-wrapper">
+              <select id="mines-count-select" class="custom-dropdown">
+                <option value="1">1 Mine (Low Risk)</option>
+                <option value="3" selected>3 Mines (Balanced)</option>
+                <option value="5">5 Mines (Medium Risk)</option>
+                <option value="10">10 Mines (High Reward)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- MINES DASHBOARD STATS -->
+          <div class="mines-metrics-bar">
+            <div class="metric-box">
+              <span class="metric-title">Next Payout</span>
+              <strong id="mines-next-mult" class="metric-value">1.12x</strong>
+            </div>
+            <div class="metric-box">
+              <span class="metric-title">Current Profit</span>
+              <strong id="mines-profit" class="metric-value highlight-green">0 ETB</strong>
+            </div>
+          </div>
+
+          <button id="start-mines-btn" class="btn-primary-action glow-red" type="button">
+            <span>Start Game 💣</span>
+          </button>
+
+          <button id="cashout-mines-btn" class="btn-primary-action glow-green hidden" type="button" disabled>
+            <span>Cashout (<span id="mines-cashout-val">0</span> ETB)</span>
+          </button>
+        </div>
+      </section>
+
+    </main>
 
     <!-- DEPOSIT MODAL -->
-    <div id="deposit-modal" class="modal-overlay hidden">
-      <div class="modal-content deposit-box">
-        <h3>💳 ሂሳብ ይሙሉ (Deposit)</h3>
-        <p class="modal-sub">በ Telebirr, CBE Birr ወይም Card የሚጨምሩትን የብር መጠን ያስገቡ</p>
-        
-        <input type="number" id="deposit-amount" value="100" placeholder="መጠን (ETB)" class="modal-input" />
-
-        <button id="pay-btn" class="pay-btn">
-          በ Chapa ክፈል
-        </button>
-        
-        <button onclick="closeDepositModal()" class="cancel-btn">
-          ሰርዝ (Close)
-        </button>
+    <div id="deposit-modal" class="modal-backdrop hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>💳 Deposit Funds</h3>
+          <p>Instant refill via Telebirr, CBE Birr & Cards</p>
+        </div>
+        <div class="modal-body">
+          <label class="field-label">Enter Amount (ETB)</label>
+          <input type="number" id="deposit-amount" value="100" placeholder="Minimum 10 ETB" class="input-styled" />
+        </div>
+        <div class="modal-actions">
+          <button id="pay-btn" class="btn-primary-action glow-blue">
+            Proceed with Chapa
+          </button>
+          <button onclick="closeDepositModal()" class="btn-secondary-action">
+            Cancel
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- ANIMATION MODAL (COIN) -->
-    <div id="coin-modal" class="modal-overlay hidden">
-      <div class="modal-content">
-        <h3 id="modal-status">Flipping Coin...</h3>
-        <div class="coin-container">
-          <div id="coin" class="coin">
-            <div class="side heads">👑</div>
-            <div class="side tails">🦅</div>
+    <!-- COIN FLIP ANIMATION MODAL -->
+    <div id="coin-modal" class="modal-backdrop hidden">
+      <div class="modal-card text-center">
+        <h3 id="modal-status" class="modal-title-anim">Flipping Coin...</h3>
+        <div class="coin-viewport">
+          <div id="coin" class="coin-3d">
+            <div class="coin-face heads">👑</div>
+            <div class="coin-face tails">🦅</div>
           </div>
         </div>
-        <p id="modal-result-text">Waiting for outcome...</p>
+        <p id="modal-result-text" class="modal-desc-anim">Waiting for outcome...</p>
       </div>
     </div>
 
     <!-- FOOTER -->
-    <footer>
-      <span>P2P Games</span> • <span>Coin Flip, Wheel, Penalty & Mines</span> • <span>Instant Payout</span>
+    <footer class="app-footer">
+      <div class="footer-links">
+        <span>P2P Games</span> • <span>Provably Fair</span> • <span>Instant Payouts</span>
+      </div>
     </footer>
+
   </div>
 
-  <script src="app.js"></script>
+  <!-- Updated JS Script Path -->
+  <script src="js/app.js"></script>
 </body>
 </html>
